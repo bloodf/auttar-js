@@ -2,10 +2,16 @@
 # Auttar WebSocket JS Class
 Classe para facilitar a implementação do WebSocket da Auttar com o seu sistema.
 
+```
+$ npm install auttarjsclass
+```
+
 ### API
 ```JS
+import AuttarClass from 'auttarjsclass';
+
 // Inicializando Classe
-const  Auttar  =  new  Auttar({});
+const  Auttar  =  new  AuttarClass({});
 
 //Realizando pagamento com cartão de crédito.
 Auttar.credit();
@@ -54,7 +60,10 @@ cancel(prop = {})
 
 ### Exemplos
 ```JS
-const  Auttar  =  new  Auttar({
+import AuttarClass from 'auttarjsclass';
+
+// Inicializando Classe
+const  Auttar  =  new  AuttarClass({
 orderId:  '123456ABCDEF',
 amount:  100.90
 });
