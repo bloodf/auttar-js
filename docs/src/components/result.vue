@@ -1,9 +1,24 @@
 <template>
   <div>
-    <h1 class="title">Retorno WS</h1>
-    <p>
-      {{ value }}
-    </p>
+    <article
+      v-for="(message, index) in value"
+      :key="index"
+      class="message"
+      :class="{
+      'is-danger': message.logLevel === 'error',
+      'is-info': message.logLevel === 'info',
+      }"
+    >
+      <div class="message-body">
+        <p><strong>{{ message.date }}</strong></p>
+        <hr style="margin: 5px 0"/>
+        <p>
+          {{ typeof message.message === 'object' && !Array.isArray(message.message)
+           ? JSON.stringify(message.message)
+           : message.message }}
+        </p>
+      </div>
+    </article>
   </div>
 </template>
 <script>
@@ -11,9 +26,9 @@
     name: 'AuttarResult',
     props: {
       value: {
-        type: Object,
+        type: Array,
         required: false,
-        default: () => ( {} ),
+        default: () => ( [] ),
       }
     }
   }
