@@ -16,6 +16,11 @@
       >
         <a @click="changeTo('transactions')">Transações</a>
       </li>
+      <li
+        :class="value === 'settings' ? 'is-active' : ''"
+      >
+        <a @click="changeTo('settings')">Configurações</a>
+      </li>
     </ul>
   </div>
 </template>
