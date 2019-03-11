@@ -2,12 +2,12 @@ module.exports = {
   root: true,
   parserOptions: {
     parser: 'babel-eslint',
-    sourceType: 'module'
+    sourceType: 'module',
   },
   env: {
     browser: true,
-    'cypress/globals': true,
   },
+
   // https://github.com/vuejs/eslint-plugin-vue#priority-a-essential-error-prevention
   // consider switching to `plugin:vue/strongly-recommended` or `plugin:vue/recommended` for stricter rules.
   extends: [
@@ -17,19 +17,18 @@ module.exports = {
     'plugin:vue/recommended',
     'plugin:vue/strongly-recommended',
   ],
+
   // required to lint *.vue files
   plugins: [
     'vue',
-    'cypress',
   ],
   globals: {
-    'ga': false, // Google Analytics
-    'cordova': true,
-    '__statics': true
+    __statics: true,
   },
+
   // add your custom rules here
-  'rules': {
-    'indent': 0,
+  rules: {
+    indent: 0,
     'no-param-reassign': 0,
     'import/first': 0,
     'import/named': 2,
@@ -44,7 +43,8 @@ module.exports = {
     'max-len': 0,
     'no-extend-native': 0,
     'func-names': 0,
-    // allow debugger during development
     'no-debugger': process.env.NODE_ENV === 'production' ? 2 : 0,
-  }
+    'vue/no-v-html': 0,
+    'vue/no-unused-vars': 0,
+  },
 };
