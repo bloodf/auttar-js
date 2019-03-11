@@ -17,42 +17,24 @@
         label="Voucher"
         placeholder="Utilizando um voucher para pagamento"
       />
-      <div class="columns">
-        <div class="column">
-          <button
-            class="button is-danger"
-            @click="reset"
-          >
-            Reiniciar
-          </button>
-        </div>
-        <div class="column has-text-right">
-          <button
-            class="button is-primary"
-            style="margin-right: 20px;"
-            @click="start"
-          >
-            Iniciar
-          </button>
-          <button
-            class="button is-success"
-            @click="confirm"
-          >
-            Confirmar
-          </button>
-        </div>
-      </div>
+      <auttar-action-buttons
+        @start="start"
+        @cancel="cancel"
+        @confirm="confirm"
+        @reset="reset"
+      />
     </div>
   </div>
 </template>
 <script>
+  import AuttarActionButtons from './buttons/action';
   import AuttarFormNumber from './form/number';
   import AuttarFormText from './form/text';
   import AuttarFormToggle from './form/toggle';
 
   export default {
     name: 'AuttarDebit',
-    components: { AuttarFormText, AuttarFormToggle, AuttarFormNumber },
+    components: { AuttarActionButtons, AuttarFormText, AuttarFormToggle, AuttarFormNumber },
     data: () => ( {
       orderId: '',
       amount: 0,
@@ -94,6 +76,22 @@
                                    this.$emit('confirm');
                                    this.reset();
                                    this.$toast.open('Transação confirmada');
+                                 }
+                               })
+        }
+      },
+      cancel() {
+        if (this.started) {
+          this.$dialog.confirm({
+                                 title: 'Cancelar Transação',
+                                 message: 'Você tem certeza que deseja cancelar a transação?',
+                                 confirmText: 'Confirmar',
+                                 type: 'is-danger',
+                                 hasIcon: true,
+                                 onConfirm: () => {
+                                   this.$emit('cancel');
+                                   this.reset();
+                                   this.$toast.open('Transação cancelada');
                                  }
                                })
         }
