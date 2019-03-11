@@ -31,18 +31,10 @@
         debug: true,
       }
     } ),
-    watch: {
-      settings: {
-        handler(newValue) {
-          this.$emit('input', newValue);
-        },
-        deep: true,
-        immediate: true,
-      }
-    },
     methods: {
       updateSettings(key, value) {
         this.settings[key] = value;
+        this.$emit('input', this.settings);
       }
     },
   }
