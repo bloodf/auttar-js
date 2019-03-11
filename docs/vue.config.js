@@ -1,11 +1,12 @@
 module.exports = {
-  outputDir: 'demo',
+  outputDir: undefined,
   runtimeCompiler: true,
 
-  css: {
-    modules: true,
-    sourceMap: true,
-  },
+  css: undefined,
 
   lintOnSave: undefined,
+  publicPath: undefined,
+  assetsDir: undefined,
+  productionSourceMap: undefined,
+  parallel: undefined
 };

@@ -32,10 +32,11 @@
     "eslint-plugin-react": "^7.12.4",
     "eslint-plugin-vue": "^5.0.0",
     "jscs": "^3.0.7",
-    "vue": "^2.6.6",
     "vue-template-compiler": "^2.5.21"
   },
   "dependencies": {
-    "eslint-config-airbnb": "^17.1.0"
+    "buefy": "^0.7.3",
+    "eslint-config-airbnb": "^17.1.0",
+    "vue": "^2.6.6"
   }
 }
