@@ -17,7 +17,9 @@
             />
           </div>
           <div class="column">
-            <auttar-result />
+            <auttar-result
+              v-model="messages"
+            />
           </div>
         </div>
       </div>
