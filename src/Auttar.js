@@ -156,13 +156,14 @@ class Auttar {
     this.orderId = props.orderId || '';
     this.__amount = 0;
     if (props.amount) this.amount = props.amount;
-    this.__transactionDate = (new Date(Date.now())).toLocaleDateString('pt-BR', {
+    this.__transactionDate = new Date().toLocaleDateString('pt-BR', {
       year: '2-digit',
       month: '2-digit',
       day: '2-digit',
       timeZone: 'America/Sao_Paulo',
     }).replace(/\//g, '');
     this.ctfTransaction = {};
+    this.__debugMessage = [];
   }
 
   debugLog(message) {
@@ -172,8 +173,36 @@ class Auttar {
   }
 
   classError(message) {
-    this.debugLog((typeof message === 'object') ? message.text : message);
+    this.debugMessage = {
+      message: typeof message === 'object' ? message.text : message,
+      logLevel: 'error',
+    };
+
     return new Error(message);
+  }
+
+  get debugMessage() {
+    return this.__debugMessage;
+  }
+
+  set debugMessage(value) {
+    if (this.debug) {
+      const debugLog = {
+        logLevel: 'info',
+        message: '',
+        ...value,
+      };
+
+      if (debugLog.logLevel === 'log' && debugLog.message) {
+        return this.debugLog(debugLog.message);
+      }
+
+      this.__debugMessage.push(debugLog);
+
+      if (debugLog.logLevel === 'info' && debugLog.message) {
+        this.debugLog(debugLog.message);
+      }
+    }
   }
 
   get amount() {
@@ -217,15 +246,19 @@ class Auttar {
         requisition.numeroParcelas = installments;
       }
 
-      this.debugLog(`Pagamento com cartão de crédito. Operação: ${requisition.operacao}. Valor ${this.amount} centavos`);
+      this.debugMessage = {
+        message: `Pagamento com cartão de crédito. Operação: ${requisition.operacao}. Valor ${this.amount} centavos`,
+      };
+
       _connect(this.__host, requisition)
         .then((response) => {
           if (response.retorno > 0) {
             const errorMsg = privateVariables.errorCodes[response.codigoErro]
-                             || (response.display.length)
+                             || response.display.length
                              ? response.display.map(m => m.mensagem).join(' ')
                              : ' ';
             const error = this.classError(`Transação não concluída ${response.codigoErro}: ${errorMsg}`);
+
             reject(error);
           }
 
@@ -233,7 +266,16 @@ class Auttar {
             ...response,
             dataTransacao: this.__transactionDate,
           };
-          this.debugLog(`Resposta do servidor -> ${JSON.stringify(response)}`);
+
+          this.debugMessage = {
+            message: this.ctfTransaction,
+          };
+
+          this.debugMessage = {
+            message: `Resposta do servidor -> ${JSON.stringify(response)}`,
+            logLevel: 'log',
+          };
+
           resolve(response);
         });
     });
@@ -251,7 +293,10 @@ class Auttar {
                        ? privateVariables.transactions.debit.voucher
                        : privateVariables.transactions.debit.base;
 
-      this.debugLog(`Pagamento com cartão de débito. Operação: ${operacao}. Valor ${this.amount} centavos`);
+      this.debugMessage = {
+        message: `Pagamento com cartão de débito. Operação: ${operacao}. Valor ${this.amount} centavos`,
+      };
+
       _connect(this.__host, {
         valorTransacao: this.amount,
         documento: this.orderId,
@@ -261,10 +306,11 @@ class Auttar {
         .then((response) => {
           if (response.retorno > 0) {
             const errorMsg = privateVariables.errorCodes[response.codigoErro]
-                             || (response.display.length)
+                             || response.display.length
                              ? response.display.map(m => m.mensagem).join(' ')
                              : ' ';
             const error = this.classError(`Transação não concluída ${response.codigoErro}: ${errorMsg}`);
+
             reject(error);
           }
 
@@ -272,7 +318,16 @@ class Auttar {
             ...response,
             dataTransacao: this.__transactionDate,
           };
-          this.debugLog(`Resposta do servidor -> ${JSON.stringify(response)}`);
+
+          this.debugMessage = {
+            message: this.ctfTransaction,
+          };
+
+          this.debugMessage = {
+            message: `Resposta do servidor -> ${JSON.stringify(response)}`,
+            logLevel: 'log',
+          };
+
           resolve(response);
         });
     });
@@ -285,24 +340,39 @@ class Auttar {
   confirm() {
     return new Promise((resolve, reject) => {
       const operacao = privateVariables.transactions.confirm;
-      this.debugLog(`Confirmação de pagamento da operação realizada.
+
+      this.debugMessage = {
+        message: `Confirmação de pagamento da operação realizada.
       Operação: ${this.ctfTransaction.operacao}
       Data: ${this.ctfTransaction.dataTransacao}
       Valor: ${this.amount}
       Bandeira: ${this.ctfTransaction.bandeira}
-      Cartão: ${this.ctfTransaction.cartao}`);
+      Cartão: ${this.ctfTransaction.cartao}`,
+      };
+
       _connect(this.__host, { operacao })
         .then((response) => {
           if (response.retorno > 0) {
             const errorMsg = privateVariables.errorCodes[response.codigoErro]
-                             || (response.display.length)
+                             || response.display.length
                              ? response.display.map(m => m.mensagem).join(' ')
                              : ' ';
-            reject(this.classError(`Transação não concluída ${response.codigoErro}: ${errorMsg}`));
+
+            const error = this.classError(`Transação não concluída ${response.codigoErro}: ${errorMsg}`);
+
+            reject(error);
           }
 
           this.ctfTransaction = Object.assign(this.ctfTransaction, response);
-          this.debugLog(`Resposta do servidor -> ${JSON.stringify(response)}`);
+          this.debugMessage = {
+            message: this.ctfTransaction,
+          };
+
+          this.debugMessage = {
+            message: `Resposta do servidor -> ${JSON.stringify(response)}`,
+            logLevel: 'log',
+          };
+
           resolve(response);
         });
     });
@@ -315,22 +385,36 @@ class Auttar {
   requestCancellation() {
     return new Promise((resolve, reject) => {
       const operacao = privateVariables.transactions.requestCancel;
-      this.debugLog(`Requisição de cancelamento de compra.
+
+      this.debugMessage = {
+        message: `Requisição de cancelamento de compra.
       Operação: ${this.ctfTransaction.operacao}
       Data: ${this.ctfTransaction.dataTransacao}
       Valor: ${this.amount}
-      NSU: ${this.ctfTransaction.nsuCTF}`);
+      NSU: ${this.ctfTransaction.nsuCTF}`,
+      };
+
       _connect(this.__host, { operacao })
         .then((response) => {
           if (response.retorno > 0) {
             const errorMsg = privateVariables.errorCodes[response.codigoErro]
-                             || (response.display.length)
+                             || response.display.length
                              ? response.display.map(m => m.mensagem).join(' ')
                              : ' ';
-            reject(this.classError(`Transação não concluída ${response.codigoErro}: ${errorMsg}`));
+
+            const error = this.classError(`Transação não concluída ${response.codigoErro}: ${errorMsg}`);
+
+            reject(error);
           }
 
-          this.debugLog(`Resposta do servidor -> ${JSON.stringify(response)}`);
+          this.debugMessage = {
+            message: responsea,
+          };
+
+          this.debugMessage = {
+            message: `Resposta do servidor -> ${JSON.stringify(response)}`,
+            logLevel: 'log',
+          };
           resolve(response);
         });
     });
@@ -349,14 +433,17 @@ class Auttar {
       const operacao = privateVariables.transactions.cancel;
       const tefOperacao = prop.operacao || this.ctfTransaction.operacao;
       const tefDataTransacao = prop.dataTransacao || this.ctfTransaction.dataTransacao;
-      const tefAmount = prop.amount ? (parseFloat(prop.amount) * 100) : this.ctfTransaction.valorTransacao;
+      const tefAmount = prop.amount ? parseFloat(prop.amount) * 100 : this.ctfTransaction.valorTransacao;
       const tefNsuCTF = prop.nsuCTF || this.ctfTransaction.nsuCTF;
 
-      this.debugLog(`Cancelamento de compra.
-      Operação: ${tefOperacao}
-      Data: ${tefDataTransacao}
-      Valor: ${tefAmount}
-      NSU: ${tefNsuCTF}`);
+      this.debugMessage = {
+        message: `Cancelamento de compra.
+        Operação: ${tefOperacao}
+        Data: ${tefDataTransacao}
+        Valor: ${tefAmount}
+        NSU: ${tefNsuCTF}`,
+      };
+
       _connect(this.__host, {
         operacao,
         valorTransacao: tefAmount,
@@ -366,10 +453,21 @@ class Auttar {
         .then((response) => {
           if (response.retorno > 0) {
             const errorMsg = privateVariables.errorCodes[response.codigoErro] || response.display[0].mensagem;
-            reject(this.classError(`Transação não concluída ${response.codigoErro}: ${errorMsg}`));
+
+            const error = this.classError(`Transação não concluída ${response.codigoErro}: ${errorMsg}`);
+
+            reject(error);
           }
 
-          this.debugLog(`Resposta do servidor -> ${JSON.stringify(response)}`);
+          this.debugMessage = {
+            message: response,
+          };
+
+          this.debugMessage = {
+            message: `Resposta do servidor -> ${JSON.stringify(response)}`,
+            logLevel: 'log',
+          };
+
           resolve(response);
         });
     });
