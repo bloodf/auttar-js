@@ -24,6 +24,7 @@
         </div>
       </div>
     </section>
+    <auttar-footer />
   </div>
 </template>
 
@@ -31,6 +32,7 @@
   import Auttar from '../../src/Auttar';
   import AuttarCredit from './components/credit';
   import AuttarDebit from './components/debit';
+  import AuttarFooter from './components/footer';
   import AuttarResult from './components/result';
   import AuttarSettings from './components/settings';
   import AuttarTabs from './components/tabs';
@@ -40,6 +42,7 @@
   export default {
     name: 'Auttar',
     components: {
+      AuttarFooter,
       AuttarSettings,
       AuttarTransactions,
       AuttarDebit,
