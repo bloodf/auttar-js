@@ -78,34 +78,36 @@ function _timeout(time = 10000) {
 
 function _connect(host, payload) {
   return new Promise((resolve, reject) => {
-    if (privateVariables.ws === null) {
-      privateVariables.ws = new WebSocket(host);
-    } else if (privateVariables.ws.readyState === 2 || privateVariables.ws.readyState === 3) {
-      _disconnect();
-      try {
+    try {
+      if (privateVariables.ws === null) {
         privateVariables.ws = new WebSocket(host);
-      } catch (e) {
-        reject(e);
+      } else if (privateVariables.ws.readyState === 2 || privateVariables.ws.readyState === 3) {
+        _disconnect();
+        privateVariables.ws = new WebSocket(host);
       }
+    } catch (e) {
+      reject(e);
     }
 
-    _timeout();
+    if (privateVariables.ws) {
+      _timeout();
 
-    privateVariables.ws.onopen = () => {
-      _clearTimeout();
-      privateVariables.ws.send(JSON.stringify(payload));
-      _timeout(60000);
-    };
+      privateVariables.ws.onopen = () => {
+        _clearTimeout();
+        privateVariables.ws.send(JSON.stringify(payload));
+        _timeout(60000);
+      };
 
-    privateVariables.ws.onmessage = (evtMsg) => {
-      _clearTimeout();
-      resolve(JSON.parse(evtMsg.data));
-    };
+      privateVariables.ws.onmessage = (evtMsg) => {
+        _clearTimeout();
+        resolve(JSON.parse(evtMsg.data));
+      };
 
-    privateVariables.ws.onerror = (evtError) => {
-      _clearTimeout();
-      reject(evtError);
-    };
+      privateVariables.ws.onerror = (evtError) => {
+        _clearTimeout();
+        reject(evtError);
+      };
+    }
   });
 }
 
@@ -174,7 +176,7 @@ class Auttar {
 
   classError(message) {
     this.debugMessage = {
-      message: typeof message === 'object' ? message.text : message,
+      message,
       logLevel: 'error',
     };
 
@@ -197,7 +199,10 @@ class Auttar {
         return this.debugLog(debugLog.message);
       }
 
-      this.__debugMessage.push(debugLog);
+      this.__debugMessage.push({
+                                  ...debugLog,
+                                  date: new Date().toISOString(),
+                                });
 
       if (debugLog.logLevel === 'info' && debugLog.message) {
         this.debugLog(debugLog.message);
@@ -277,7 +282,8 @@ class Auttar {
           };
 
           resolve(response);
-        });
+        })
+        .catch((e) => this.classError(e));
     });
   }
 
@@ -329,7 +335,8 @@ class Auttar {
           };
 
           resolve(response);
-        });
+        })
+        .catch((e) => this.classError(e));
     });
   }
 
@@ -374,7 +381,8 @@ class Auttar {
           };
 
           resolve(response);
-        });
+        })
+        .catch((e) => this.classError(e));
     });
   }
 
@@ -416,7 +424,8 @@ class Auttar {
             logLevel: 'log',
           };
           resolve(response);
-        });
+        })
+        .catch((e) => this.classError(e));
     });
   }
 
@@ -469,7 +478,8 @@ class Auttar {
           };
 
           resolve(response);
-        });
+        })
+        .catch((e) => this.classError(e));
     });
   }
 }
