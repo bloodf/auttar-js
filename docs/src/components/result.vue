@@ -1,12 +1,10 @@
 <template>
-  <section class="section">
-    <div class="container">
-      <h1 class="title">Retorno WS</h1>
-      <p>
-        {{ value }}
-      </p>
-    </div>
-  </section>
+  <div>
+    <h1 class="title">Retorno WS</h1>
+    <p>
+      {{ value }}
+    </p>
+  </div>
 </template>
 <script>
   export default {
