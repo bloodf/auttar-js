@@ -60,7 +60,7 @@
   },
   "scripts": {
     "lint": "eslint src",
-    "build": "node tools/build",
+    "build": "node build/buildDist",
     "prepublish": "npm run build"
   }
 }

@@ -1,0 +1,41 @@
+{
+  "name": "auttarjsdocs",
+  "version": "0.1.0",
+  "description": "Auttar WebSocket JS Class Documents.",
+  "private": false,
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/bloodf/auttar"
+  },
+  "keywords": [
+    "auttar"
+  ],
+  "author": {
+    "name": "Heitor Ramon Ribeiro",
+    "email": "heitor.ramon@gmail.com"
+  },
+  "license": "MIT",
+  "scripts": {
+    "serve": "vue-cli-service serve",
+    "build": "vue-cli-service build",
+    "lint": "vue-cli-service lint"
+  },
+  "devDependencies": {
+    "@vue/cli": "^3.5.0",
+    "@vue/cli-plugin-babel": "^3.5.0",
+    "@vue/cli-plugin-eslint": "^3.5.0",
+    "@vue/cli-service": "^3.5.0",
+    "@vue/eslint-config-airbnb": "^4.0.0",
+    "babel-eslint": "^10.0.1",
+    "eslint": "^5.8.0",
+    "eslint-plugin-jsx-a11y": "^6.2.1",
+    "eslint-plugin-react": "^7.12.4",
+    "eslint-plugin-vue": "^5.0.0",
+    "jscs": "^3.0.7",
+    "vue": "^2.6.6",
+    "vue-template-compiler": "^2.5.21"
+  },
+  "dependencies": {
+    "eslint-config-airbnb": "^17.1.0"
+  }
+}
