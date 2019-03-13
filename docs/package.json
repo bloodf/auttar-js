@@ -36,6 +36,7 @@
   },
   "dependencies": {
     "buefy": "^0.7.3",
+    "core-js": "^2.6.5",
     "eslint-config-airbnb": "^17.1.0",
     "vue": "^2.6.6",
     "vue-json-pretty": "^1.4.1"
