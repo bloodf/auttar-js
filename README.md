@@ -1,9 +1,21 @@
 
-# Auttar WebSocket JS Class
-Classe para facilitar a implementação do WebSocket da Auttar com o seu sistema.
+# Auttar.JS
+Uma forma mais fácil de implementar o websocket da Auttar em seu sistema.
 
-```
+##### Exemplo Online
+
+Acesse [ABD]() para acessar o exemplo online da implementação
+
+## Como Usar
+
+Com NPM
+```bash
 $ npm install auttarjsclass
+```
+
+Como CDN
+```html
+
 ```
 
 ### API

@@ -42,30 +42,6 @@
 
   var objectSpread = _objectSpread;
 
-  function createCommonjsModule(fn, module) {
-  	return module = { exports: {} }, fn(module, module.exports), module.exports;
-  }
-
-  var _typeof_1 = createCommonjsModule(function (module) {
-  function _typeof2(obj) { if (typeof Symbol === "function" && typeof Symbol.iterator === "symbol") { _typeof2 = function _typeof2(obj) { return typeof obj; }; } else { _typeof2 = function _typeof2(obj) { return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }; } return _typeof2(obj); }
-
-  function _typeof(obj) {
-    if (typeof Symbol === "function" && _typeof2(Symbol.iterator) === "symbol") {
-      module.exports = _typeof = function _typeof(obj) {
-        return _typeof2(obj);
-      };
-    } else {
-      module.exports = _typeof = function _typeof(obj) {
-        return obj && typeof Symbol === "function" && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : _typeof2(obj);
-      };
-    }
-
-    return _typeof(obj);
-  }
-
-  module.exports = _typeof;
-  });
-
   function _classCallCheck(instance, Constructor) {
     if (!(instance instanceof Constructor)) {
       throw new TypeError("Cannot call a class as a function");
@@ -176,39 +152,41 @@
 
   function _connect(host, payload) {
     return new Promise(function (resolve, reject) {
-      if (privateVariables.ws === null) {
-        privateVariables.ws = new WebSocket(host);
-      } else if (privateVariables.ws.readyState === 2 || privateVariables.ws.readyState === 3) {
-        _disconnect();
-
-        try {
+      try {
+        if (privateVariables.ws === null) {
           privateVariables.ws = new WebSocket(host);
-        } catch (e) {
-          reject(e);
+        } else if (privateVariables.ws.readyState === 2 || privateVariables.ws.readyState === 3) {
+          _disconnect();
+
+          privateVariables.ws = new WebSocket(host);
         }
+      } catch (e) {
+        reject(e);
       }
 
-      _timeout();
+      if (privateVariables.ws) {
+        _timeout();
 
-      privateVariables.ws.onopen = function () {
-        _clearTimeout();
+        privateVariables.ws.onopen = function () {
+          _clearTimeout();
 
-        privateVariables.ws.send(JSON.stringify(payload));
+          privateVariables.ws.send(JSON.stringify(payload));
 
-        _timeout(60000);
-      };
+          _timeout(60000);
+        };
 
-      privateVariables.ws.onmessage = function (evtMsg) {
-        _clearTimeout();
+        privateVariables.ws.onmessage = function (evtMsg) {
+          _clearTimeout();
 
-        resolve(JSON.parse(evtMsg.data));
-      };
+          resolve(JSON.parse(evtMsg.data));
+        };
 
-      privateVariables.ws.onerror = function (evtError) {
-        _clearTimeout();
+        privateVariables.ws.onerror = function (evtError) {
+          _clearTimeout();
 
-        reject(evtError);
-      };
+          reject(evtError);
+        };
+      }
     });
   }
   /**
@@ -264,13 +242,14 @@
       this.orderId = props.orderId || '';
       this.__amount = 0;
       if (props.amount) this.amount = props.amount;
-      this.__transactionDate = new Date(Date.now()).toLocaleDateString('pt-BR', {
+      this.__transactionDate = new Date().toLocaleDateString('pt-BR', {
         year: '2-digit',
         month: '2-digit',
         day: '2-digit',
         timeZone: 'America/Sao_Paulo'
       }).replace(/\//g, '');
       this.ctfTransaction = {};
+      this.__debugMessage = [];
     }
 
     createClass(Auttar, [{
@@ -283,7 +262,10 @@
     }, {
       key: "classError",
       value: function classError(message) {
-        this.debugLog(_typeof_1(message) === 'object' ? message.text : message);
+        this.debugMessage = {
+          message: message,
+          logLevel: 'error'
+        };
         return new Error(message);
       }
     }, {
@@ -319,7 +301,9 @@
             requisition.numeroParcelas = installments;
           }
 
-          _this.debugLog("Pagamento com cart\xE3o de cr\xE9dito. Opera\xE7\xE3o: ".concat(requisition.operacao, ". Valor ").concat(_this.amount, " centavos"));
+          _this.debugMessage = {
+            message: "Pagamento com cart\xE3o de cr\xE9dito. Opera\xE7\xE3o: ".concat(requisition.operacao, ". Valor ").concat(_this.amount, " centavos")
+          };
 
           _connect(_this.__host, requisition).then(function (response) {
             if (response.retorno > 0) {
@@ -335,10 +319,17 @@
             _this.ctfTransaction = objectSpread({}, response, {
               dataTransacao: _this.__transactionDate
             });
-
-            _this.debugLog("Resposta do servidor -> ".concat(JSON.stringify(response)));
-
+            _this.debugMessage = {
+              message: "Resposta do servidor -> ".concat(JSON.stringify(response)),
+              logLevel: 'log'
+            };
+            _this.debugMessage = {
+              message: _this.ctfTransaction,
+              logLevel: 'json'
+            };
             resolve(response);
+          }).catch(function (e) {
+            return _this.classError(e);
           });
         });
       }
@@ -357,8 +348,9 @@
         var isVoucher = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : false;
         return new Promise(function (resolve, reject) {
           var operacao = isVoucher ? privateVariables.transactions.debit.voucher : privateVariables.transactions.debit.base;
-
-          _this2.debugLog("Pagamento com cart\xE3o de d\xE9bito. Opera\xE7\xE3o: ".concat(operacao, ". Valor ").concat(_this2.amount, " centavos"));
+          _this2.debugMessage = {
+            message: "Pagamento com cart\xE3o de d\xE9bito. Opera\xE7\xE3o: ".concat(operacao, ". Valor ").concat(_this2.amount, " centavos")
+          };
 
           _connect(_this2.__host, {
             valorTransacao: _this2.amount,
@@ -379,10 +371,17 @@
             _this2.ctfTransaction = objectSpread({}, response, {
               dataTransacao: _this2.__transactionDate
             });
-
-            _this2.debugLog("Resposta do servidor -> ".concat(JSON.stringify(response)));
-
+            _this2.debugMessage = {
+              message: "Resposta do servidor -> ".concat(JSON.stringify(response)),
+              logLevel: 'log'
+            };
+            _this2.debugMessage = {
+              message: _this2.ctfTransaction,
+              logLevel: 'json'
+            };
             resolve(response);
+          }).catch(function (e) {
+            return _this2.classError(e);
           });
         });
       }
@@ -398,8 +397,9 @@
 
         return new Promise(function (resolve, reject) {
           var operacao = privateVariables.transactions.confirm;
-
-          _this3.debugLog("Confirma\xE7\xE3o de pagamento da opera\xE7\xE3o realizada.\n      Opera\xE7\xE3o: ".concat(_this3.ctfTransaction.operacao, "\n      Data: ").concat(_this3.ctfTransaction.dataTransacao, "\n      Valor: ").concat(_this3.amount, "\n      Bandeira: ").concat(_this3.ctfTransaction.bandeira, "\n      Cart\xE3o: ").concat(_this3.ctfTransaction.cartao));
+          _this3.debugMessage = {
+            message: "Confirma\xE7\xE3o de pagamento da opera\xE7\xE3o realizada.\n      Opera\xE7\xE3o: ".concat(_this3.ctfTransaction.operacao, "\n      Data: ").concat(_this3.ctfTransaction.dataTransacao, "\n      Valor: ").concat(_this3.amount, "\n      Bandeira: ").concat(_this3.ctfTransaction.bandeira, "\n      Cart\xE3o: ").concat(_this3.ctfTransaction.cartao)
+          };
 
           _connect(_this3.__host, {
             operacao: operacao
@@ -408,14 +408,24 @@
               var errorMsg = privateVariables.errorCodes[response.codigoErro] || response.display.length ? response.display.map(function (m) {
                 return m.mensagem;
               }).join(' ') : ' ';
-              reject(_this3.classError("Transa\xE7\xE3o n\xE3o conclu\xEDda ".concat(response.codigoErro, ": ").concat(errorMsg)));
+
+              var error = _this3.classError("Transa\xE7\xE3o n\xE3o conclu\xEDda ".concat(response.codigoErro, ": ").concat(errorMsg));
+
+              reject(error);
             }
 
             _this3.ctfTransaction = Object.assign(_this3.ctfTransaction, response);
-
-            _this3.debugLog("Resposta do servidor -> ".concat(JSON.stringify(response)));
-
+            _this3.debugMessage = {
+              message: "Resposta do servidor -> ".concat(JSON.stringify(response)),
+              logLevel: 'log'
+            };
+            _this3.debugMessage = {
+              message: response,
+              logLevel: 'json'
+            };
             resolve(response);
+          }).catch(function (e) {
+            return _this3.classError(e);
           });
         });
       }
@@ -431,8 +441,9 @@
 
         return new Promise(function (resolve, reject) {
           var operacao = privateVariables.transactions.requestCancel;
-
-          _this4.debugLog("Requisi\xE7\xE3o de cancelamento de compra.\n      Opera\xE7\xE3o: ".concat(_this4.ctfTransaction.operacao, "\n      Data: ").concat(_this4.ctfTransaction.dataTransacao, "\n      Valor: ").concat(_this4.amount, "\n      NSU: ").concat(_this4.ctfTransaction.nsuCTF));
+          _this4.debugMessage = {
+            message: "Requisi\xE7\xE3o de cancelamento de compra.\n      Opera\xE7\xE3o: ".concat(_this4.ctfTransaction.operacao, "\n      Data: ").concat(_this4.ctfTransaction.dataTransacao, "\n      Valor: ").concat(_this4.amount, "\n      NSU: ").concat(_this4.ctfTransaction.nsuCTF)
+          };
 
           _connect(_this4.__host, {
             operacao: operacao
@@ -441,12 +452,23 @@
               var errorMsg = privateVariables.errorCodes[response.codigoErro] || response.display.length ? response.display.map(function (m) {
                 return m.mensagem;
               }).join(' ') : ' ';
-              reject(_this4.classError("Transa\xE7\xE3o n\xE3o conclu\xEDda ".concat(response.codigoErro, ": ").concat(errorMsg)));
+
+              var error = _this4.classError("Transa\xE7\xE3o n\xE3o conclu\xEDda ".concat(response.codigoErro, ": ").concat(errorMsg));
+
+              reject(error);
             }
 
-            _this4.debugLog("Resposta do servidor -> ".concat(JSON.stringify(response)));
-
+            _this4.debugMessage = {
+              message: "Resposta do servidor -> ".concat(JSON.stringify(response)),
+              logLevel: 'log'
+            };
+            _this4.debugMessage = {
+              message: responsea,
+              logLevel: 'json'
+            };
             resolve(response);
+          }).catch(function (e) {
+            return _this4.classError(e);
           });
         });
       }
@@ -455,7 +477,6 @@
        * @param {string} prop.dataTransacao
        * @param {number} prop.amount
        * @param {string} prop.nsuCTF
-       * @param {string} prop.operacao
        * @returns {Promise<any>}
        */
 
@@ -471,8 +492,9 @@
           var tefDataTransacao = prop.dataTransacao || _this5.ctfTransaction.dataTransacao;
           var tefAmount = prop.amount ? parseFloat(prop.amount) * 100 : _this5.ctfTransaction.valorTransacao;
           var tefNsuCTF = prop.nsuCTF || _this5.ctfTransaction.nsuCTF;
-
-          _this5.debugLog("Cancelamento de compra.\n      Opera\xE7\xE3o: ".concat(tefOperacao, "\n      Data: ").concat(tefDataTransacao, "\n      Valor: ").concat(tefAmount, "\n      NSU: ").concat(tefNsuCTF));
+          _this5.debugMessage = {
+            message: "Cancelamento de compra.\n        Opera\xE7\xE3o: ".concat(tefOperacao, "\n        Data: ").concat(tefDataTransacao, "\n        Valor: ").concat(tefAmount, "\n        NSU: ").concat(tefNsuCTF)
+          };
 
           _connect(_this5.__host, {
             operacao: operacao,
@@ -482,14 +504,52 @@
           }).then(function (response) {
             if (response.retorno > 0) {
               var errorMsg = privateVariables.errorCodes[response.codigoErro] || response.display[0].mensagem;
-              reject(_this5.classError("Transa\xE7\xE3o n\xE3o conclu\xEDda ".concat(response.codigoErro, ": ").concat(errorMsg)));
+
+              var error = _this5.classError("Transa\xE7\xE3o n\xE3o conclu\xEDda ".concat(response.codigoErro, ": ").concat(errorMsg));
+
+              reject(error);
             }
 
-            _this5.debugLog("Resposta do servidor -> ".concat(JSON.stringify(response)));
-
+            _this5.debugMessage = {
+              message: "Resposta do servidor -> ".concat(JSON.stringify(response)),
+              logLevel: 'log'
+            };
+            _this5.debugMessage = {
+              message: response,
+              logLevel: 'json'
+            };
             resolve(response);
+          }).catch(function (e) {
+            return _this5.classError(e);
           });
         });
+      }
+    }, {
+      key: "debugMessage",
+      get: function get() {
+        return this.__debugMessage;
+      },
+      set: function set(value) {
+        if (this.debug) {
+          var debugLog = objectSpread({
+            logLevel: 'info',
+            message: ''
+          }, value, {
+            date: new Date().toISOString()
+          });
+
+          if (debugLog.logLevel === 'log' && debugLog.message) {
+            return this.debugLog(debugLog.message);
+          }
+
+          this.__debugMessage.push(objectSpread({}, debugLog, {
+            date: new Date().toISOString()
+          }));
+
+          if (debugLog.logLevel === 'info' && debugLog.message) {
+            this.debugLog(debugLog.message);
+          }
+        }
       }
     }, {
       key: "amount",
