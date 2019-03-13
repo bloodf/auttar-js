@@ -20,7 +20,7 @@
       <button
         class="button is-success"
         style="margin-right: 20px;"
-        @click="$emit('confirm')"
+        @click="$emit('finish')"
       >
         Confirmar
       </button>
@@ -36,5 +36,5 @@
 <script>
   export default {
     name: 'AuttarActionButtons',
-  }
+  };
 </script>

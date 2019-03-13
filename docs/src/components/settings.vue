@@ -23,19 +23,22 @@
     name: 'AuttarSettings',
     components: { AuttarFormToggle, AuttarFormText },
     props: {
-      value: Object,
+      value: {
+        type: Object,
+        required: true,
+      },
     },
-    data: () => ( {
+    data: () => ({
       settings: {
         host: 'ws://localhost:2500',
         debug: true,
-      }
-    } ),
+      },
+    }),
     methods: {
       updateSettings(key, value) {
         this.settings[key] = value;
         this.$emit('input', this.settings);
-      }
+      },
     },
-  }
+  };
 </script>

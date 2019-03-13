@@ -21,5 +21,5 @@
   export default {
     name: 'AuttarFormNumber',
     mixins: [CommonNumberMixin],
-  }
+  };
 </script>

@@ -1,3 +1,4 @@
+/* eslint-disable */
 import CommonMixin from './common';
 
 export default {
@@ -19,6 +20,6 @@ export default {
 
     __emitValue(value) {
       this.$emit('input', value);
-    }
+    },
   },
 };

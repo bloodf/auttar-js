@@ -11,7 +11,7 @@
               :value="value"
               @input="$emit('input', $event)"
             >
-              {{placeholder}}
+              {{ placeholder }}
             </b-switch>
           </div>
         </div>
@@ -25,5 +25,5 @@
   export default {
     name: 'AuttarFormToggle',
     mixins: [CommonBooleanMixin],
-  }
+  };
 </script>

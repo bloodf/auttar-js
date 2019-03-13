@@ -1,6 +1,6 @@
 import Vue from 'vue';
-import App from './App.vue';
 import Buefy from 'buefy';
+import App from './App.vue';
 import 'buefy/dist/buefy.css';
 
 Vue.config.productionTip = false;

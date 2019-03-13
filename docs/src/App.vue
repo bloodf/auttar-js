@@ -9,10 +9,9 @@
               v-model="selectedTab"
             />
             <component
-              v-model="settings"
               :is="tabComponent"
+              v-model="settings"
               @start="start"
-              @confirm=""
               @reset="reset"
             />
           </div>
@@ -51,7 +50,7 @@
       AuttarResult,
       AuttarTitle,
     },
-    data: () => ( {
+    data: () => ({
       settings: {
         host: 'ws://localhost:2500',
         debug: true,
@@ -60,14 +59,14 @@
       auttar: null,
       transactions: [],
       messages: [],
-    } ),
+    }),
     computed: {
       tabComponent() {
         if (this.selectedTab === 'debit') return AuttarDebit;
         if (this.selectedTab === 'transactions') return AuttarTransactions;
         if (this.selectedTab === 'settings') return AuttarSettings;
         return AuttarCredit;
-      }
+      },
     },
     watch: {
       'auttar.ctfTransaction': {
@@ -85,7 +84,7 @@
         },
         immediate: false,
         deep: true,
-      }
+      },
     },
     methods: {
       start(params) {
@@ -105,7 +104,7 @@
       },
       reset() {
         this.auttar = null;
-      }
+      },
     },
   };
 </script>

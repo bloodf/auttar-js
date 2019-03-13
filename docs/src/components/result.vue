@@ -5,17 +5,17 @@
       :key="index"
       class="message"
       :class="{
-      'is-danger': message.logLevel === 'error',
-      'is-info': message.logLevel === 'info',
+        'is-danger': message.logLevel === 'error',
+        'is-info': message.logLevel === 'info',
       }"
     >
       <div class="message-body">
         <p><strong>{{ message.date }}</strong></p>
-        <hr style="margin: 5px 0"/>
+        <hr style="margin: 5px 0">
         <p>
           {{ typeof message.message === 'object' && !Array.isArray(message.message)
-           ? JSON.stringify(message.message)
-           : message.message }}
+            ? JSON.stringify(message.message)
+            : message.message }}
         </p>
       </div>
     </article>
@@ -28,8 +28,8 @@
       value: {
         type: Array,
         required: false,
-        default: () => ( [] ),
-      }
-    }
-  }
+        default: () => ([]),
+      },
+    },
+  };
 </script>

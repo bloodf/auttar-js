@@ -8,5 +8,5 @@ module.exports = {
   publicPath: undefined,
   assetsDir: undefined,
   productionSourceMap: undefined,
-  parallel: undefined
+  parallel: undefined,
 };

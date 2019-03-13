@@ -8,7 +8,7 @@
         placeholder="ID da ordem que vai ser enviado para a Auttar"
       />
       <auttar-form-number
-        v-model.numeric="amount"
+        v-model.number="amount"
         label="Valor"
         placeholder="Valor que será processado"
       />
@@ -20,7 +20,7 @@
       <auttar-action-buttons
         @start="start"
         @cancel="cancel"
-        @confirm="confirm"
+        @finish="finish"
         @reset="reset"
       />
     </div>
@@ -34,13 +34,15 @@
 
   export default {
     name: 'AuttarDebit',
-    components: { AuttarActionButtons, AuttarFormText, AuttarFormToggle, AuttarFormNumber },
-    data: () => ( {
+    components: {
+ AuttarActionButtons, AuttarFormText, AuttarFormToggle, AuttarFormNumber,
+},
+    data: () => ({
       orderId: '',
       amount: 0,
       voucher: false,
       started: false,
-    } ),
+    }),
     methods: {
       start() {
         if (!this.amount) return false;
@@ -61,10 +63,11 @@
                                    voucher: this.voucher,
                                  });
                                  this.started = true;
-                               }
+                               },
                              });
+        return true;
       },
-      confirm() {
+      finish() {
         if (this.started) {
           this.$dialog.confirm({
                                  title: 'Confirmar Transação',
@@ -73,11 +76,11 @@
                                  type: 'is-danger',
                                  hasIcon: true,
                                  onConfirm: () => {
-                                   this.$emit('confirm');
                                    this.reset();
                                    this.$toast.open('Transação confirmada');
-                                 }
-                               })
+                                   this.$emit('finish');
+                                 },
+                               });
         }
       },
       cancel() {
@@ -92,8 +95,8 @@
                                    this.$emit('cancel');
                                    this.reset();
                                    this.$toast.open('Transação cancelada');
-                                 }
-                               })
+                                 },
+                               });
         }
       },
       reset() {
@@ -103,6 +106,6 @@
         this.started = false;
         this.$emit('reset');
       },
-    }
-  }
+    },
+  };
 </script>

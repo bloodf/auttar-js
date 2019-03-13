@@ -37,7 +37,7 @@
     methods: {
       changeTo(tab) {
         this.$emit('input', tab);
-      }
-    }
+      },
+    },
   };
 </script>

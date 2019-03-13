@@ -22,5 +22,5 @@
   export default {
     name: 'AuttarFormText',
     mixins: [CommonMixin],
-  }
+  };
 </script>
