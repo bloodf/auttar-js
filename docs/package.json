@@ -17,7 +17,7 @@
   "license": "MIT",
   "scripts": {
     "serve": "npx vue-cli-service serve",
-    "build": "npx vue-cli-service build",
+    "build": "npm install && npx vue-cli-service build",
     "lint": "npx vue-cli-service lint --fix"
   },
   "devDependencies": {

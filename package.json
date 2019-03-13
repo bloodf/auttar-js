@@ -61,7 +61,6 @@
   "scripts": {
     "lint": "eslint src",
     "build": "node build/buildDist",
-    "build:docs": "cd docs && npm install && npm run build",
     "prepublish": "npm run build",
     "dev": "cd ./docs && npm run serve"
   }
