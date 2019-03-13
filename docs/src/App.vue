@@ -33,7 +33,7 @@
 </template>
 
 <script>
-  import Auttar from '../../src/Auttar';
+  import Auttar from '../../dist/index.es';
   import AuttarCredit from './components/credit';
   import AuttarDebit from './components/debit';
   import AuttarFooter from './components/footer';
