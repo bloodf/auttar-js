@@ -4,7 +4,7 @@ Uma forma mais fácil de implementar o websocket da Auttar em seu sistema.
 
 ##### Exemplo Online
 
-Acesse [ABD]() para acessar o exemplo online da implementação
+Acesse [https://auttar-js.netlify.com](https://auttar-js.netlify.com) para acessar o exemplo online da implementação
 
 ## Como Usar
 
@@ -15,7 +15,7 @@ $ npm install auttarjsclass
 
 Como CDN
 ```html
-
+<script src="https://raw.githubusercontent.com/bloodf/auttar/master/dist/index.js"></script>
 ```
 
 ### API
