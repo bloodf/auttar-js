@@ -83,7 +83,7 @@
                                  type: 'is-danger',
                                  hasIcon: true,
                                  onConfirm: () => {
-                                   this.reset();
+                                   this.reset(false);
                                    this.$toast.open('Transação confirmada');
                                    this.$emit('finish');
                                  },
@@ -106,13 +106,13 @@
                                });
         }
       },
-      reset() {
+      reset(emmitEvent = true) {
         this.orderId = '';
         this.amount = 0;
         this.installment = 1;
         this.interest = false;
         this.started = false;
-        this.$emit('reset');
+        if (emmitEvent) this.$emit('reset');
       },
     },
   };

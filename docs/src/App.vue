@@ -11,8 +11,13 @@
             <component
               :is="tabComponent"
               v-model="settings"
+              :transactions="transactions"
+              :messages="messages"
               @start="start"
               @reset="reset"
+              @finish="finish"
+              @cancel="cancel"
+              @request-cancel="requestCancel"
             />
           </div>
           <div class="column">
@@ -58,6 +63,7 @@
       selectedTab: 'credit',
       auttar: null,
       transactions: [],
+      ctfTransactions: [],
       messages: [],
     }),
     computed: {
@@ -71,8 +77,8 @@
     watch: {
       'auttar.ctfTransaction': {
         handler(newValue) {
-          if (Object.keys(newValue).length) {
-            this.transactions.push(newValue);
+          if (typeof newValue === 'object' && Object.keys(newValue).length) {
+            this.ctfTransactions.push(newValue);
           }
         },
         immediate: false,
@@ -80,7 +86,9 @@
       },
       'auttar.debugMessage': {
         handler(newValue) {
-          this.messages = newValue;
+          if (Array.isArray(newValue)) {
+            this.messages = [...newValue, ...this.messages];
+          }
         },
         immediate: false,
         deep: true,
@@ -88,22 +96,86 @@
     },
     methods: {
       start(params) {
+        const transaction = {
+          orderId: params.orderId || Date.now(),
+          amount: params.amount,
+        };
+
         this.auttar = new Auttar({
                                    ...this.settings,
-                                   orderId: params.orderId || Date.now(),
-                                   amount: params.amount,
+                                   ...transaction,
                                  });
 
         if (params.type === 'credit') {
-          this.auttar.credit(params.installment, params.interest);
+          this.transactions.push({
+                                   ...params,
+                                   ...transaction,
+                                 });
+
+          this.auttar.credit(params.installment, params.interest)
+              .then(() => {
+                this.transactionStatus(this.auttar.orderId, 'start', this.auttar.ctfTransaction);
+              })
+              .catch(() => {
+                this.transactionStatus(this.auttar.orderId, 'error');
+              });
         }
 
         if (params.type === 'debit') {
-          this.auttar.debit(params.voucher);
+          this.auttar.debit(params.voucher)
+              .then(() => {
+                this.transactionStatus(this.auttar.orderId, 'start', this.auttar.ctfTransaction);
+              })
+              .catch(() => {
+                this.transactionStatus(this.auttar.orderId, 'error');
+              });
         }
+      },
+      finish() {
+        if (this.auttar instanceof Auttar) {
+          this.auttar.confirm()
+            .then(() => {
+              this.transactionStatus(this.auttar.orderId, 'success');
+            })
+            .catch(() => {
+              this.transactionStatus(this.auttar.orderId, 'fail');
+            });
+        }
+      },
+      cancel() {
+        this.auttar.requestCancellation()
+            .then(() => {
+              this.requestCancel({ extra: this.auttar.ctfTransaction });
+            })
+            .catch(() => {
+              this.transactionStatus(this.auttar.orderId, 'fail');
+            });
+      },
+      requestCancel(transaction) {
+        this.auttar.cancel({
+                             dataTransacao: transaction.extra.dataTransacao,
+                             amount: transaction.extra.valorTransacao,
+                             nsuCTF: transaction.extra.nsuCTF,
+                           })
+            .then(() => {
+              this.transactionStatus(transaction.orderId, 'cancel');
+            })
+            .catch(() => {
+              this.transactionStatus(transaction.orderId, 'fail');
+            });
       },
       reset() {
         this.auttar = null;
+      },
+      transactionStatus(id, status, extra) {
+        const index = this.transactions.findIndex(t => t.orderId === id);
+        this.transactions[index].status = status;
+        if (extra) {
+          this.transactions[index].extra = extra;
+        }
+        if (status === 'error') {
+          this.reset();
+        }
       },
     },
   };

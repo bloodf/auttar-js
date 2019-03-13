@@ -8,7 +8,6 @@
       >
         <b-input
           :value="value"
-          type="number"
           @input="__changeValue"
         />
       </b-field>
