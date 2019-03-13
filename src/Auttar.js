@@ -1,5 +1,5 @@
-/* eslint-disable no-underscore-dangle */
-import { logInfo } from './Helpers.js';
+/* eslint-disable */
+import { logInfo } from './Helpers';
 
 const privateVariables = {
   transactions: {
@@ -193,6 +193,7 @@ class Auttar {
         logLevel: 'info',
         message: '',
         ...value,
+        date: new Date().toISOString(),
       };
 
       if (debugLog.logLevel === 'log' && debugLog.message) {
@@ -273,12 +274,13 @@ class Auttar {
           };
 
           this.debugMessage = {
-            message: this.ctfTransaction,
+            message: `Resposta do servidor -> ${JSON.stringify(response)}`,
+            logLevel: 'log',
           };
 
           this.debugMessage = {
-            message: `Resposta do servidor -> ${JSON.stringify(response)}`,
-            logLevel: 'log',
+            message: this.ctfTransaction,
+            logLevel: 'json',
           };
 
           resolve(response);
@@ -326,12 +328,13 @@ class Auttar {
           };
 
           this.debugMessage = {
-            message: this.ctfTransaction,
+            message: `Resposta do servidor -> ${JSON.stringify(response)}`,
+            logLevel: 'log',
           };
 
           this.debugMessage = {
-            message: `Resposta do servidor -> ${JSON.stringify(response)}`,
-            logLevel: 'log',
+            message: this.ctfTransaction,
+            logLevel: 'json',
           };
 
           resolve(response);
@@ -371,13 +374,15 @@ class Auttar {
           }
 
           this.ctfTransaction = Object.assign(this.ctfTransaction, response);
-          this.debugMessage = {
-            message: this.ctfTransaction,
-          };
 
           this.debugMessage = {
             message: `Resposta do servidor -> ${JSON.stringify(response)}`,
             logLevel: 'log',
+          };
+
+          this.debugMessage = {
+            message: response,
+            logLevel: 'json',
           };
 
           resolve(response);
@@ -416,13 +421,15 @@ class Auttar {
           }
 
           this.debugMessage = {
-            message: responsea,
-          };
-
-          this.debugMessage = {
             message: `Resposta do servidor -> ${JSON.stringify(response)}`,
             logLevel: 'log',
           };
+
+          this.debugMessage = {
+            message: responsea,
+            logLevel: 'json',
+          };
+
           resolve(response);
         })
         .catch((e) => this.classError(e));
@@ -434,7 +441,6 @@ class Auttar {
    * @param {string} prop.dataTransacao
    * @param {number} prop.amount
    * @param {string} prop.nsuCTF
-   * @param {string} prop.operacao
    * @returns {Promise<any>}
    */
   cancel(prop = {}) {
@@ -469,12 +475,13 @@ class Auttar {
           }
 
           this.debugMessage = {
-            message: response,
+            message: `Resposta do servidor -> ${JSON.stringify(response)}`,
+            logLevel: 'log',
           };
 
           this.debugMessage = {
-            message: `Resposta do servidor -> ${JSON.stringify(response)}`,
-            logLevel: 'log',
+            message: response,
+            logLevel: 'json',
           };
 
           resolve(response);
