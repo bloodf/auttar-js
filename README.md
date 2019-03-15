@@ -10,17 +10,17 @@ Acesse [https://auttar-js.netlify.com](https://auttar-js.netlify.com) para acess
 
 Com NPM
 ```bash
-$ npm install auttarjsclass
+$ npm install auttarjs
 ```
 
 Como CDN
 ```html
-<script src="https://raw.githubusercontent.com/bloodf/auttar/master/dist/index.js"></script>
+<script src="https://raw.githubusercontent.com/bloodf/auttar-js/master/dist/index.js"></script>
 ```
 
 ### API
 ```JS
-import AuttarClass from 'auttarjsclass';
+import AuttarClass from 'auttarjs';
 
 // Inicializando Classe
 const  Auttar  =  new  AuttarClass({});
@@ -72,7 +72,7 @@ cancel(prop = {})
 
 ### Exemplos
 ```JS
-import AuttarClass from 'auttarjsclass';
+import AuttarClass from 'auttarjs';
 
 // Inicializando Classe
 const  Auttar  =  new  AuttarClass({
