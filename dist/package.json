@@ -1,13 +1,15 @@
 {
   "name": "auttarjs",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Auttar WebSocket JS Class. An easy implementation of Auttar WebSocket Service.",
   "repository": {
     "type": "git",
-    "url": "https://github.com/bloodf/auttar"
+    "url": "https://github.com/bloodf/auttar-js.git"
   },
   "keywords": [
-    "auttar"
+    "auttar",
+    "websocket",
+    "tef"
   ],
   "author": {
     "name": "Heitor Ramon Ribeiro",
