@@ -545,7 +545,6 @@ bower_components
 .lock-wscript
 
 # Compiled binary addons (https://nodejs.org/api/addons.html)
-build/Release
 
 # Dependency directories
 node_modules/
@@ -588,7 +587,6 @@ typings/
 .serverless
 ### Gradle template
 .gradle
-/build/
 
 # Ignore Gradle GUI config
 gradle-app.setting

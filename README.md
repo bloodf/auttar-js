@@ -19,10 +19,10 @@ yarn add auttarjs
 
 ```html
 <!-- For UNPKG use the code below. -->
-<script src="https://unpkg.com/auttarjs@0.1.2/dist/index.js"></script>
+<script src="https://unpkg.com/auttarjs@latest/dist/index.js"></script>
 
 <!-- For JSDelivr use the code below. -->
-<script src="https://cdn.jsdelivr.net/npm/auttarjs@0.1.2/dist/index.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/auttarjs@latest/dist/index.js"></script>
 
 <script>
   console.log(Auttar);
