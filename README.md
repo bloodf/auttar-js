@@ -7,15 +7,27 @@ Uma forma mais fácil de implementar o websocket da Auttar em seu sistema.
 Acesse [https://auttar-js.netlify.com](https://auttar-js.netlify.com) para acessar o exemplo online da implementação
 
 ## Como Usar
+### NPM / Yarn
+```sh
+npm install auttarjs --save
 
-Com NPM
-```bash
-$ npm install auttarjs
+# For Yarn, use the command below.
+yarn add auttarjs
 ```
 
-Como CDN
+### CDN
+
 ```html
-<script src="https://raw.githubusercontent.com/bloodf/auttar-js/master/dist/index.js"></script>
+<!-- For UNPKG use the code below. -->
+<script src="https://unpkg.com/auttarjs@0.1.2/dist/index.js"></script>
+
+<!-- For JSDelivr use the code below. -->
+<script src="https://cdn.jsdelivr.net/npm/auttarjs@0.1.2/dist/index.js"></script>
+
+<script>
+  // UMD module is exposed through the "[cammelCaseName]" global variable.
+  console.log(Auttar);
+</script>
 ```
 
 ### API
