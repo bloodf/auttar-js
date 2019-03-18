@@ -16,6 +16,9 @@ const configuration: Configuration = {
     asyncToPromises: true,
     babelrc: false,
   },
+  globals: {
+    Auttar: 'Auttar'
+  },
   output: {
     format: [
       'es',
