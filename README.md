@@ -2,7 +2,7 @@
 # Auttar.JS
 Uma forma mais fácil de implementar o websocket da Auttar em seu sistema.
 
-##### Exemplo Online
+## Exemplo Online
 
 Acesse [https://auttar-js.netlify.com](https://auttar-js.netlify.com) para acessar o exemplo online da implementação
 
@@ -25,36 +25,22 @@ yarn add auttarjs
 <script src="https://cdn.jsdelivr.net/npm/auttarjs@0.1.2/dist/index.js"></script>
 
 <script>
-  // UMD module is exposed through the "[cammelCaseName]" global variable.
   console.log(Auttar);
 </script>
 ```
 
-### API
+## API
+
+### Classe
 ```JS
 import AuttarClass from 'auttarjs';
 
 // Inicializando Classe
 const  Auttar  =  new  AuttarClass({});
-
-//Realizando pagamento com cartão de crédito.
-Auttar.credit();
-
-//Realizando pagamento com cartão de débito.
-Auttar.debit();
-
-//Realizando desfazimento total de operação
-Auttar.requestCancellation();
-
-//Realizando cancelamento da última compra;
-Auttar.cancel();
-
-//Realizando confirmação da operação
-Auttar.confirm();
 ```
 
-### Parâmetros
-#### Construtor
+#### Argumentos
+##### Construtor
 |Propiedade|Tipo|Default|
 |--|--|--|
 | host | string | ws://localhost:2500
@@ -62,19 +48,20 @@ Auttar.confirm();
 | orderId | string | ''
 | amount | float | 0
 
-#### credit
+### credit
 ```JS
-credit(installments =  1, withInterest = false)
+Auttar.credit(installments =  1, withInterest = false)
 ```
 
-#### debit
+### debit
 ```JS
-debit(isVoucher = false)
+Auttar.debit(isVoucher = false)
 ```
-#### cancel
+### cancel
 ```JS
-cancel(prop = {})
+Auttar.cancel(prop = {})
 ```
+#### Argumentos
 |Propiedade|Tipo|Default|
 |--|--|--|
 | operacao | number | Última operação realizada
@@ -82,7 +69,7 @@ cancel(prop = {})
 | amount | float | Valor da última operação realizada
 | nsuCTF | string | nsuCTF da última operação realizada
 
-### Exemplos
+## Exemplos
 ```JS
 import AuttarClass from 'auttarjs';
 
