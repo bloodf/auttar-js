@@ -27,7 +27,7 @@ const configuration: Configuration = {
       'amd',
       'esm',
     ],
-    moduleName,
+    moduleName: 'Auttar',
     minify: true,
     sourceMap: true,
     target: 'browser',
