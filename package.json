@@ -1,6 +1,6 @@
 {
   "name": "auttarjs",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Auttar WebSocket JS Class. An easy implementation of Auttar WebSocket Service.",
   "private": false,
   "repository": {
@@ -17,8 +17,13 @@
     "email": "heitor.ramon@gmail.com"
   },
   "license": "MIT",
-  "main": "index.js",
-  "jsnext:main": "index.es.js",
+  "cdn": "dist/index.umd.js",
+  "main": "dist/index.js",
+  "types": "types/index.d.ts",
+  "unpkg": "dist/index.umd.js",
+  "module": "dist/index.mjs",
+  "jsdelivr": "dist/index.umd.js",
+  "umd:main": "dist/index.umd.js",
   "babel": {
     "presets": [
       "@babel/preset-env"
