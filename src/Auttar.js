@@ -119,11 +119,13 @@ function _connect(host, payload) {
 function _send(payload) {
   return new Promise((resolve, reject) => {
     try {
-      if (privateVariables.ws) {
+      if (privateVariables.ws && privateVariables.ws.readyState === 1) {
         privateVariables.ws.send(JSON.stringify(payload));
         privateVariables.ws.onmessage = (evtMsg) => {
           resolve(JSON.parse(evtMsg.data));
         };
+      } else {
+        setTimeout(() => _send(payload), 5000);
       }
     } catch (error) {
       reject(error);
