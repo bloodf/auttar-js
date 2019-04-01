@@ -54,6 +54,7 @@ const privateVariables = {
   timeout: null,
   close: true,
   timeoutConn: null,
+  firstCall: true,
 };
 
 function _disconnect() {
@@ -91,12 +92,16 @@ function _connect(host, payload) {
 
     if (privateVariables.ws) {
       _timeout();
-
-      privateVariables.ws.onopen = () => {
-        _clearTimeout();
+      if (privateVariables.firstCall) {
+        privateVariables.firstCall = false;
+        privateVariables.ws.onopen = () => {
+          _clearTimeout();
+          privateVariables.ws.send(JSON.stringify(payload));
+          _timeout(60000);
+        };
+      } else {
         privateVariables.ws.send(JSON.stringify(payload));
-        _timeout(60000);
-      };
+      }
 
       privateVariables.ws.onmessage = (evtMsg) => {
         _clearTimeout();
@@ -107,6 +112,21 @@ function _connect(host, payload) {
         _clearTimeout();
         reject(evtError);
       };
+    }
+  });
+}
+
+function _send(payload) {
+  return new Promise((resolve, reject) => {
+    try {
+      if (privateVariables.ws) {
+        privateVariables.ws.send(JSON.stringify(payload));
+        privateVariables.ws.onmessage = (evtMsg) => {
+          resolve(JSON.parse(evtMsg.data));
+        };
+      }
+    } catch (error) {
+      reject(error);
     }
   });
 }
@@ -201,9 +221,9 @@ class Auttar {
       }
 
       this.__debugMessage.push({
-                                  ...debugLog,
-                                  date: new Date().toISOString(),
-                                });
+                                 ...debugLog,
+                                 date: new Date().toISOString(),
+                               });
 
       if (debugLog.logLevel === 'info' && debugLog.message) {
         this.debugLog(debugLog.message);
@@ -347,9 +367,10 @@ class Auttar {
    * Confirma a operação com o CTF
    * @returns {Promise<void>}
    */
-  confirm() {
-    return new Promise((resolve, reject) => {
+  async confirm() {
+    try {
       const operacao = privateVariables.transactions.confirm;
+      const response = await _connect(this.__host, { operacao });
 
       this.debugMessage = {
         message: `Confirmação de pagamento da operação realizada.
@@ -360,35 +381,33 @@ class Auttar {
       Cartão: ${this.ctfTransaction.cartao}`,
       };
 
-      _connect(this.__host, { operacao })
-        .then((response) => {
-          if (response.retorno > 0) {
-            const errorMsg = privateVariables.errorCodes[response.codigoErro]
-                             || response.display.length
-                             ? response.display.map(m => m.mensagem).join(' ')
-                             : ' ';
+      if (response.retorno > 0) {
+        const errorMsg = privateVariables.errorCodes[response.codigoErro]
+                         || response.display.length
+                         ? response.display.map(m => m.mensagem).join(' ')
+                         : ' ';
 
-            const error = this.classError(`Transação não concluída ${response.codigoErro}: ${errorMsg}`);
+        const error = this.classError(`Transação não concluída ${response.codigoErro}: ${errorMsg}`);
 
-            reject(error);
-          }
+        reject(error);
+      }
 
-          this.ctfTransaction = Object.assign(this.ctfTransaction, response);
+      this.ctfTransaction = Object.assign(this.ctfTransaction, response);
 
-          this.debugMessage = {
-            message: `Resposta do servidor -> ${JSON.stringify(response)}`,
-            logLevel: 'log',
-          };
+      this.debugMessage = {
+        message: `Resposta do servidor -> ${JSON.stringify(response)}`,
+        logLevel: 'log',
+      };
 
-          this.debugMessage = {
-            message: response,
-            logLevel: 'json',
-          };
+      this.debugMessage = {
+        message: response,
+        logLevel: 'json',
+      };
 
-          resolve(response);
-        })
-        .catch((e) => this.classError(e));
-    });
+      return Promise.resolve(response);
+    } catch (error) {
+      this.classError(error);
+    }
   }
 
   /**
