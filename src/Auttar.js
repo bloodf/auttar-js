@@ -142,7 +142,7 @@ function _webSocket(host, payload) {
 
         _clearTimeout();
         if (privateVariables.debug) {
-          logInfo(JSON.parse(payload));
+          logInfo(payload);
         }
 
         if (payload) {
@@ -155,7 +155,7 @@ function _webSocket(host, payload) {
       privateVariables.ws.onmessage = (evtMsg) => {
         if (privateVariables.debug) {
           logInfo('Receiving a message from the WebSocket.');
-          logInfo(JSON.parse(evtMsg));
+          logInfo(evtMsg);
         }
 
         _clearTimeout();
@@ -185,7 +185,7 @@ function _send(payload) {
       if (privateVariables.ws && privateVariables.ws.readyState === 1) {
         if (privateVariables.debug) {
           logInfo('Sending a message to the WebSocket.');
-          logInfo(JSON.parse(payload));
+          logInfo(payload);
         }
 
         privateVariables.ws.send(JSON.stringify(payload));

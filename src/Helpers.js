@@ -8,14 +8,14 @@ const LogLevelName = {
 };
 
 const LogLevelStyle = {
-  Info: 'background:#215ace ; padding: 2px; border-radius: 2px;  color: #fff;',
-  Warn: 'background:#e8c82c ; padding: 2px; border-radius: 2px;  color: #000;',
-  Error: 'background:#c92112 ; padding: 2px; border-radius: 2px;  color: #fff;',
-  Method: 'background:#6d0cb2 ; padding: 2px; border-radius: 2px;  color: #fff;',
+  Info: 'background:#215ace ; padding: 2px; border-radius: 2px 0 0 2px;  color: #fff;',
+  Warn: 'background:#e8c82c ; padding: 2px; border-radius: 2px 0 0 2px;  color: #000;',
+  Error: 'background:#c92112 ; padding: 2px; border-radius: 2px 0 0 2px;  color: #fff;',
+  Method: 'background:#6d0cb2 ; padding: 2px; border-radius: 2px 0 0 2px;  color: #fff;',
 };
 
-const NAME = '%c Auttar ';
-const BACKGROUND = 'background:#bc0909 ; padding: 2px; border-radius: 2px;  color: #fff ';
+const NAME = 'Auttar ';
+const BACKGROUND = 'background:#bc0909 ; padding: 2px; border-radius: 0 2px 2px 0;  color: #fff ';
 
 const log = (name, style, className, classStyle, message) => {
   console.log(`%c ${name} %c ${className} %c ${message}`, style, classStyle, 'background: transparent;'); // eslint-disable-line no-console
