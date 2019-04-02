@@ -106,43 +106,40 @@
                                    ...transaction,
                                  });
 
-        setTimeout(() => {
-          if (params.type === 'credit') {
-            this.transactions.push({
-                                     ...params,
-                                     ...transaction,
-                                   });
+        if (params.type === 'credit') {
+          this.transactions.push({
+                                   ...params,
+                                   ...transaction,
+                                 });
 
-            this.auttar.credit(params.installment, params.interest)
-                .then(() => {
-                  this.transactionStatus(this.auttar.orderId, 'start', this.auttar.ctfTransaction);
-                })
-                .catch(() => {
-                  this.transactionStatus(this.auttar.orderId, 'error');
-                });
-          }
+          this.auttar.credit(params.installment, params.interest)
+              .then(() => {
+                this.transactionStatus(this.auttar.orderId, 'start', this.auttar.ctfTransaction);
+              })
+              .catch(() => {
+                this.transactionStatus(this.auttar.orderId, 'error');
+              });
+        }
 
-          if (params.type === 'debit') {
-            this.auttar.debit(params.voucher)
-                .then(() => {
-                  this.transactionStatus(this.auttar.orderId, 'start', this.auttar.ctfTransaction);
-                })
-                .catch(() => {
-                  this.transactionStatus(this.auttar.orderId, 'error');
-                });
-          }
-        }, 2000);
-
+        if (params.type === 'debit') {
+          this.auttar.debit(params.voucher)
+              .then(() => {
+                this.transactionStatus(this.auttar.orderId, 'start', this.auttar.ctfTransaction);
+              })
+              .catch(() => {
+                this.transactionStatus(this.auttar.orderId, 'error');
+              });
+        }
       },
       finish() {
         if (this.auttar instanceof Auttar) {
           this.auttar.confirm()
-              .then(() => {
-                this.transactionStatus(this.auttar.orderId, 'success');
-              })
-              .catch(() => {
-                this.transactionStatus(this.auttar.orderId, 'fail');
-              });
+            .then(() => {
+              this.transactionStatus(this.auttar.orderId, 'success');
+            })
+            .catch(() => {
+              this.transactionStatus(this.auttar.orderId, 'fail');
+            });
         }
       },
       cancel() {

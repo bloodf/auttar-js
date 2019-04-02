@@ -70,40 +70,57 @@ function _disconnect() {
   }
 }
 
-function _webSocket(host) {
+function _webSocket(host, payload) {
   if (privateVariables.debug) {
     logMethod('_webSocket', 'host', host);
   }
 
-  return new Promise((resolve, reject) => {
-    try {
-      if (privateVariables.debug) {
-        logInfo('Starting WebSocket Connection.');
-      }
-
-      if (privateVariables.ws === null) {
-        if (privateVariables.debug) {
-          logInfo('WebSocket not active, creating a new connection.');
-        }
-
-        privateVariables.host = host;
-        privateVariables.ws = new WebSocket(host);
-      } else if (privateVariables.ws.readyState === 2 || privateVariables.ws.readyState === 3) {
-        if (privateVariables.debug) {
-          logWarn('WebSocket is connected but not available. Closing connection to start a new one.');
-        }
-
-        _disconnect();
-        privateVariables.ws = new WebSocket(host);
-      }
-    } catch (e) {
-      reject(e);
+  if (privateVariables.ws === null) {
+    if (privateVariables.debug) {
+      logInfo('Starting WebSocket Connection.');
     }
 
-    if (privateVariables.ws) {
-      privateVariables.ws.onopen = () => {
-        logInfo('WebSocket Connected.');
-        resolve();
+    privateVariables.ws = new WebSocket(host);
+  } else if (privateVariables.ws.readyState === 2 || privateVariables.ws.readyState === 3) {
+    if (privateVariables.debug) {
+      logWarn('WebSocket is connected but not available. Closing connection to start a new one.');
+    }
+
+    _disconnect();
+    privateVariables.ws = new WebSocket(host);
+  }
+
+  return new Promise((resolve, reject) => {
+    try {
+      _timeout();
+
+      const sendRequest = () => {
+        if (privateVariables.debug) {
+          logInfo('Sending a message to the WebSocket.');
+          logInfo(JSON.stringify(payload));
+        }
+
+        _clearTimeout();
+        privateVariables.ws.send(JSON.stringify(payload));
+        _timeout(60000);
+      };
+
+      if (privateVariables.ws.readyState === 0) {
+        privateVariables.ws.onopen = () => {
+          if (privateVariables.debug) {
+            logInfo('WebSocket Connected.');
+          }
+
+          sendRequest();
+        };
+      } else if (privateVariables.ws.readyState === 1) {
+        sendRequest();
+      }
+
+      privateVariables.ws.onmessage = (evtMsg) => {
+        logInfo('Received a message from the WebSocket.');
+        _clearTimeout();
+        resolve(JSON.parse(evtMsg.data));
       };
 
       privateVariables.ws.onerror = (evtError) => {
@@ -112,46 +129,34 @@ function _webSocket(host) {
           logError(evtError);
         }
 
-        reject(evtError);
+        _clearTimeout();
+        if (evtError) reject(evtError);
       };
+    } catch (e) {
+      if (privateVariables.debug) {
+        logWarn('WebSocket has returned an error.');
+        logError(e);
+      }
+
+      reject(e);
     }
   });
 }
 
-function _send(payload) {
-  if (privateVariables.debug) {
-    logMethod('_send', 'payload', payload);
-  }
+function _clearTimeout() {
+  privateVariables.close = false;
+  clearTimeout(privateVariables.timeoutConn);
+}
 
-  return new Promise((resolve, reject) => {
-    try {
-      if (privateVariables.ws && privateVariables.ws.readyState === 1) {
-        if (privateVariables.debug) {
-          logInfo('Sending a message to the WebSocket.');
-          logInfo(JSON.stringify(payload));
-        }
-
-        privateVariables.ws.send(JSON.stringify(payload));
-
-        privateVariables.ws.onmessage = (evtMsg) => {
-          if (privateVariables.debug) {
-            logInfo('Receiving a message from the WebSocket.');
-            logInfo(JSON.stringify(evtMsg.data));
-          }
-
-          resolve(JSON.parse(evtMsg.data));
-        };
-
-      } else {
-        setTimeout(() => {
-          _disconnect();
-          _webSocket(privateVariables.host, payload);
-        }, 5000);
-      }
-    } catch (error) {
-      reject(error);
+function _timeout(time = 10000) {
+  privateVariables.close = true;
+  privateVariables.timeoutConn = setTimeout(() => {
+    if (privateVariables.close) {
+      privateVariables.ws.close();
+    } else {
+      _clearTimeout();
     }
-  });
+  }, time);
 }
 
 /**
@@ -325,7 +330,7 @@ class Auttar {
         message: `Pagamento com cartão de crédito. Operação: ${requisition.operacao}. Valor ${this.amount} centavos`,
       };
 
-      const response = await _send(requisition);
+      const response = await _webSocket(this.__host, requisition);
 
       if (response.retorno > 0) {
         const errorMsg = privateVariables.errorCodes[response.codigoErro]
@@ -370,7 +375,7 @@ class Auttar {
                   : privateVariables.transactions.debit.base,
       };
 
-      const response = await _send(requisition);
+      const response = await _webSocket(this.__host, requisition);
 
       if (response.retorno > 0) {
         const errorMsg = privateVariables.errorCodes[response.codigoErro]
@@ -399,7 +404,7 @@ class Auttar {
   async confirm() {
     try {
       this.debugLogMethod('confirm');
-      const response = await _send({ operacao: privateVariables.transactions.confirm });
+      const response = await _webSocket(this.__host, { operacao: privateVariables.transactions.confirm });
 
       this.debugMessage = {
         message: `Confirmação de pagamento da operação realizada.
@@ -442,7 +447,7 @@ class Auttar {
       Valor: ${this.amount}
       NSU: ${this.ctfTransaction.nsuCTF}`,
       };
-      const response = await _send({ operacao: privateVariables.transactions.requestCancel });
+      const response = await _webSocket(this.__host, { operacao: privateVariables.transactions.requestCancel });
       if (response.retorno > 0) {
         const errorMsg = privateVariables.errorCodes[response.codigoErro]
                          || response.display.length
@@ -483,7 +488,8 @@ class Auttar {
         NSU: ${tefNsuCTF}`,
       };
 
-      const response = await _send(
+      const response = await _webSocket(
+        this.__host,
         {
           operacao,
           valorTransacao: tefAmount,

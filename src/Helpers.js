@@ -42,8 +42,7 @@ export function logWarn(msg) {
 }
 
 export function logMethod(method, args, params) {
-  log(LogLevelName.Method, LogLevelStyle.Method, NAME, BACKGROUND,
-      `Call Method: ${method}(${args || ''}) ${(params) ? `=> ${JSON.stringify(params)}` : ''}`);
+  log(LogLevelName.Method, LogLevelStyle.Method, NAME, BACKGROUND, `Call Method: ${method}(${args || ''}) ${(params) ? `=> ${JSON.stringify(params)}` : ''}`);
 }
 
 export function logError(msg) {
