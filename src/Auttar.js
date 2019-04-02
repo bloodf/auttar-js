@@ -1,5 +1,5 @@
 /* eslint-disable */
-import { logInfo } from './Helpers';
+import { logInfo, logError, logMethod, logWarn } from './Helpers';
 
 const privateVariables = {
   transactions: {
@@ -55,34 +55,76 @@ const privateVariables = {
   close: true,
   timeoutConn: null,
   firstCall: true,
+  debug: false,
 };
 
 function _disconnect() {
+  if (privateVariables.debug) {
+    logMethod('_disconnect');
+  }
+
   privateVariables.ws.close();
+
+  if (privateVariables.debug) {
+    logInfo('WebSocket Disconnected');
+  }
 }
 
 function _clearTimeout() {
+  if (privateVariables.debug) {
+    logMethod('_clearTimeout');
+  }
+
   privateVariables.close = false;
   clearTimeout(privateVariables.timeoutConn);
+
+  if (privateVariables.debug) {
+    logInfo('WebSotcket Timeout cleared.');
+  }
 }
 
 function _timeout(time = 10000) {
+  if (privateVariables.debug) {
+    logMethod('_timeout', 'time', time);
+  }
+
   privateVariables.close = true;
+
+  if (privateVariables.debug) {
+    logInfo('Starting WebSocket Timeout');
+  }
+
   privateVariables.timeoutConn = setTimeout(() => {
     if (privateVariables.close) {
-      privateVariables.ws.close();
+      _disconnect();
     } else {
       _clearTimeout();
     }
   }, time);
 }
 
-function _connect(host, payload) {
+function _webSocket(host, payload) {
+  if (privateVariables.debug) {
+    logMethod('_webSocket', 'host, payload', host, payload);
+  }
+
   return new Promise((resolve, reject) => {
     try {
+      if (privateVariables.debug) {
+        logInfo('Starting WebSocket Connection.');
+      }
+
       if (privateVariables.ws === null) {
+        if (privateVariables.debug) {
+          logInfo('WebSocket not active, creating a new connection.');
+        }
+
         privateVariables.ws = new WebSocket(host);
       } else if (privateVariables.ws.readyState === 2 || privateVariables.ws.readyState === 3) {
+        if (privateVariables.debug) {
+          logWarn('WebSocket is connected but not available. Closing connection to start a new one.');
+        }
+
         _disconnect();
         privateVariables.ws = new WebSocket(host);
       }
@@ -92,23 +134,40 @@ function _connect(host, payload) {
 
     if (privateVariables.ws) {
       _timeout();
-      if (privateVariables.firstCall) {
-        privateVariables.firstCall = false;
-        privateVariables.ws.onopen = () => {
-          _clearTimeout();
+
+      privateVariables.ws.onopen = () => {
+        if (privateVariables.debug) {
+          logInfo('Setting the WebSocket opening message');
+        }
+
+        _clearTimeout();
+        if (privateVariables.debug) {
+          logInfo(JSON.parse(payload));
+        }
+
+        if (payload) {
           privateVariables.ws.send(JSON.stringify(payload));
-          _timeout(60000);
-        };
-      } else {
-        privateVariables.ws.send(JSON.stringify(payload));
-      }
+        }
+
+        _timeout(60000);
+      };
 
       privateVariables.ws.onmessage = (evtMsg) => {
+        if (privateVariables.debug) {
+          logInfo('Receiving a message from the WebSocket.');
+          logInfo(JSON.parse(evtMsg));
+        }
+
         _clearTimeout();
         resolve(JSON.parse(evtMsg.data));
       };
 
       privateVariables.ws.onerror = (evtError) => {
+        if (privateVariables.debug) {
+          logWarn('WebSocket has returned an error.');
+          logError(evtError);
+        }
+
         _clearTimeout();
         reject(evtError);
       };
@@ -117,11 +176,24 @@ function _connect(host, payload) {
 }
 
 function _send(payload) {
+  if (privateVariables.debug) {
+    logMethod('_send', 'payload', payload);
+  }
+
   return new Promise((resolve, reject) => {
     try {
       if (privateVariables.ws && privateVariables.ws.readyState === 1) {
+        if (privateVariables.debug) {
+          logInfo('Sending a message to the WebSocket.');
+          logInfo(JSON.parse(payload));
+        }
+
         privateVariables.ws.send(JSON.stringify(payload));
         privateVariables.ws.onmessage = (evtMsg) => {
+          if (privateVariables.debug) {
+            logInfo('Received an message from the WebSocket.');
+          }
+
           resolve(JSON.parse(evtMsg.data));
         };
       } else {
@@ -177,17 +249,24 @@ class Auttar {
   constructor(props) {
     this.__host = props.host || 'ws://localhost:2500';
     this.debug = props.debug || false;
+    privateVariables.debug = props.debug || false;
     this.orderId = props.orderId || '';
     this.__amount = 0;
     if (props.amount) this.amount = props.amount;
-    this.__transactionDate = new Date().toLocaleDateString('pt-BR', {
-      year: '2-digit',
-      month: '2-digit',
-      day: '2-digit',
-      timeZone: 'America/Sao_Paulo',
-    }).replace(/\//g, '');
+    this.__transactionDate = new Date()
+      .toLocaleDateString(
+        'pt-BR',
+        {
+          year: '2-digit',
+          month: '2-digit',
+          day: '2-digit',
+          timeZone: 'America/Sao_Paulo',
+        })
+      .replace(/\//g, '');
     this.ctfTransaction = {};
     this.__debugMessage = [];
+
+    return this.init();
   }
 
   debugLog(message) {
@@ -196,11 +275,27 @@ class Auttar {
     }
   }
 
+  debugWarning(message) {
+    if (this.debug) {
+      logWarn(message);
+    }
+  }
+
+  debugLogMethod(method, args, ...params) {
+    if (this.debug) {
+      logMethod(method, args, params);
+    }
+  }
+
   classError(message) {
     this.debugMessage = {
       message,
       logLevel: 'error',
     };
+
+    if (this.debug) {
+      logError(message);
+    }
 
     return new Error(message);
   }
@@ -222,10 +317,12 @@ class Auttar {
         return this.debugLog(debugLog.message);
       }
 
-      this.__debugMessage.push({
-                                 ...debugLog,
-                                 date: new Date().toISOString(),
-                               });
+      this.__debugMessage.push(
+        {
+          ...debugLog,
+          date: new Date().toISOString(),
+        }
+      );
 
       if (debugLog.logLevel === 'info' && debugLog.message) {
         this.debugLog(debugLog.message);
@@ -249,6 +346,17 @@ class Auttar {
     }
   }
 
+  async init() {
+    this.debugLogMethod('init');
+    try {
+      await _webSocket(this.__host);
+
+      return Promise.resolve(this);
+    } catch (error) {
+      return Promise.reject(error);
+    }
+  }
+
   /**
    * Pagamento com cartão de crédito, podendo ser declarado
    * com parcelamento e se o juro é da administradora.
@@ -256,8 +364,9 @@ class Auttar {
    * @param {boolean} withInterest - juros pela administradora
    * @returns {Promise<AuttarSuccessResponse>}
    */
-  credit(installments = 1, withInterest = false) {
-    return new Promise((resolve, reject) => {
+  async credit(installments = 1, withInterest = false) {
+    this.debugLogMethod('credi', 'installments, withInterest', installments, withInterest);
+    try {
       const requisition = {
         valorTransacao: this.amount,
         documento: this.orderId,
@@ -278,37 +387,36 @@ class Auttar {
         message: `Pagamento com cartão de crédito. Operação: ${requisition.operacao}. Valor ${this.amount} centavos`,
       };
 
-      _connect(this.__host, requisition)
-        .then((response) => {
-          if (response.retorno > 0) {
-            const errorMsg = privateVariables.errorCodes[response.codigoErro]
-                             || response.display.length
-                             ? response.display.map(m => m.mensagem).join(' ')
-                             : ' ';
-            const error = this.classError(`Transação não concluída ${response.codigoErro}: ${errorMsg}`);
+      const response = await _send(requisition);
 
-            reject(error);
-          }
+      if (response.retorno > 0) {
+        const errorMsg = privateVariables.errorCodes[response.codigoErro]
+                         || response.display.length
+                         ? response.display.map(m => m.mensagem)
+                                   .join(' ')
+                         : ' ';
+        return Promise.reject(this.classError(`Transação não concluída ${response.codigoErro}: ${errorMsg}`));
+      }
 
-          this.ctfTransaction = {
-            ...response,
-            dataTransacao: this.__transactionDate,
-          };
+      this.ctfTransaction = {
+        ...response,
+        dataTransacao: this.__transactionDate,
+      };
 
-          this.debugMessage = {
-            message: `Resposta do servidor -> ${JSON.stringify(response)}`,
-            logLevel: 'log',
-          };
+      this.debugMessage = {
+        message: `Resposta do servidor -> ${JSON.stringify(response)}`,
+        logLevel: 'log',
+      };
 
-          this.debugMessage = {
-            message: this.ctfTransaction,
-            logLevel: 'json',
-          };
+      this.debugMessage = {
+        message: this.ctfTransaction,
+        logLevel: 'json',
+      };
 
-          resolve(response);
-        })
-        .catch((e) => this.classError(e));
-    });
+      return Promise.resolve(response);
+    } catch (error) {
+      return Promise.reject(error);
+    }
   }
 
   /**
@@ -317,52 +425,53 @@ class Auttar {
    * @param {boolean} isVoucher
    * @returns {Promise<AuttarSuccessResponse>}
    */
-  debit(isVoucher = false) {
-    return new Promise((resolve, reject) => {
-      const operacao = isVoucher
-                       ? privateVariables.transactions.debit.voucher
-                       : privateVariables.transactions.debit.base;
+  async debit(isVoucher = false) {
+    try {
+      this.debugLogMethod('debit', 'isVoucher', isVoucher);
 
       this.debugMessage = {
         message: `Pagamento com cartão de débito. Operação: ${operacao}. Valor ${this.amount} centavos`,
       };
 
-      _connect(this.__host, {
+      const requisition = {
         valorTransacao: this.amount,
         documento: this.orderId,
         dataTransacao: this.__transactionDate,
-        operacao,
-      })
-        .then((response) => {
-          if (response.retorno > 0) {
-            const errorMsg = privateVariables.errorCodes[response.codigoErro]
-                             || response.display.length
-                             ? response.display.map(m => m.mensagem).join(' ')
-                             : ' ';
-            const error = this.classError(`Transação não concluída ${response.codigoErro}: ${errorMsg}`);
+        operacao: isVoucher
+                  ? privateVariables.transactions.debit.voucher
+                  : privateVariables.transactions.debit.base,
+      };
 
-            reject(error);
-          }
+      const response = await _send(requisition);
 
-          this.ctfTransaction = {
-            ...response,
-            dataTransacao: this.__transactionDate,
-          };
+      if (response.retorno > 0) {
+        const errorMsg = privateVariables.errorCodes[response.codigoErro]
+                         || response.display.length
+                         ? response.display.map(m => m.mensagem)
+                                   .join(' ')
+                         : ' ';
+        return Promise.reject(this.classError(`Transação não concluída ${response.codigoErro}: ${errorMsg}`));
+      }
 
-          this.debugMessage = {
-            message: `Resposta do servidor -> ${JSON.stringify(response)}`,
-            logLevel: 'log',
-          };
+      this.ctfTransaction = {
+        ...response,
+        dataTransacao: this.__transactionDate,
+      };
 
-          this.debugMessage = {
-            message: this.ctfTransaction,
-            logLevel: 'json',
-          };
+      this.debugMessage = {
+        message: `Resposta do servidor -> ${JSON.stringify(response)}`,
+        logLevel: 'log',
+      };
 
-          resolve(response);
-        })
-        .catch((e) => this.classError(e));
-    });
+      this.debugMessage = {
+        message: this.ctfTransaction,
+        logLevel: 'json',
+      };
+
+      return Promise.resolve(response);
+    } catch (error) {
+      return Promise.reject(error);
+    }
   }
 
   /**
@@ -371,8 +480,8 @@ class Auttar {
    */
   async confirm() {
     try {
-      const operacao = privateVariables.transactions.confirm;
-      const response = await _connect(this.__host, { operacao });
+      this.debugLogMethod('confirm');
+      const response = await _send({ operacao: privateVariables.transactions.confirm });
 
       this.debugMessage = {
         message: `Confirmação de pagamento da operação realizada.
@@ -386,12 +495,11 @@ class Auttar {
       if (response.retorno > 0) {
         const errorMsg = privateVariables.errorCodes[response.codigoErro]
                          || response.display.length
-                         ? response.display.map(m => m.mensagem).join(' ')
+                         ? response.display.map(m => m.mensagem)
+                                   .join(' ')
                          : ' ';
 
-        const error = this.classError(`Transação não concluída ${response.codigoErro}: ${errorMsg}`);
-
-        reject(error);
+        return Promise.reject(this.classError(`Transação não concluída ${response.codigoErro}: ${errorMsg}`));
       }
 
       this.ctfTransaction = Object.assign(this.ctfTransaction, response);
@@ -408,7 +516,7 @@ class Auttar {
 
       return Promise.resolve(response);
     } catch (error) {
-      this.classError(error);
+      return Promise.reject(error);
     }
   }
 
@@ -416,10 +524,9 @@ class Auttar {
    * Inicia o processo de cancelamento de compra.
    * @returns {Promise<void>}
    */
-  requestCancellation() {
-    return new Promise((resolve, reject) => {
-      const operacao = privateVariables.transactions.requestCancel;
-
+  async requestCancellation() {
+    try {
+      this.debugLogMethod('requestCancellation');
       this.debugMessage = {
         message: `Requisição de cancelamento de compra.
       Operação: ${this.ctfTransaction.operacao}
@@ -427,34 +534,31 @@ class Auttar {
       Valor: ${this.amount}
       NSU: ${this.ctfTransaction.nsuCTF}`,
       };
+      const response = await _send({ operacao: privateVariables.transactions.requestCancel });
+      if (response.retorno > 0) {
+        const errorMsg = privateVariables.errorCodes[response.codigoErro]
+                         || response.display.length
+                         ? response.display.map(m => m.mensagem)
+                                   .join(' ')
+                         : ' ';
 
-      _connect(this.__host, { operacao })
-        .then((response) => {
-          if (response.retorno > 0) {
-            const errorMsg = privateVariables.errorCodes[response.codigoErro]
-                             || response.display.length
-                             ? response.display.map(m => m.mensagem).join(' ')
-                             : ' ';
+        return Promise.reject(this.classError(`Transação não concluída ${response.codigoErro}: ${errorMsg}`));
+      }
 
-            const error = this.classError(`Transação não concluída ${response.codigoErro}: ${errorMsg}`);
+      this.debugMessage = {
+        message: `Resposta do servidor -> ${JSON.stringify(response)}`,
+        logLevel: 'log',
+      };
 
-            reject(error);
-          }
+      this.debugMessage = {
+        message: responsea,
+        logLevel: 'json',
+      };
 
-          this.debugMessage = {
-            message: `Resposta do servidor -> ${JSON.stringify(response)}`,
-            logLevel: 'log',
-          };
-
-          this.debugMessage = {
-            message: responsea,
-            logLevel: 'json',
-          };
-
-          resolve(response);
-        })
-        .catch((e) => this.classError(e));
-    });
+      return Promise.resolve(response);
+    } catch (error) {
+      return Promise.reject(error);
+    }
   }
 
   /**
@@ -464,14 +568,15 @@ class Auttar {
    * @param {string} prop.nsuCTF
    * @returns {Promise<any>}
    */
-  cancel(prop = {}) {
-    return new Promise((resolve, reject) => {
+  async cancel(prop = {}) {
+    try {
+      this.debugLogMethod('cancel', 'prop', prop);
+
       const operacao = privateVariables.transactions.cancel;
       const tefOperacao = prop.operacao || this.ctfTransaction.operacao;
       const tefDataTransacao = prop.dataTransacao || this.ctfTransaction.dataTransacao;
       const tefAmount = prop.amount ? parseFloat(prop.amount) * 100 : this.ctfTransaction.valorTransacao;
       const tefNsuCTF = prop.nsuCTF || this.ctfTransaction.nsuCTF;
-
       this.debugMessage = {
         message: `Cancelamento de compra.
         Operação: ${tefOperacao}
@@ -480,35 +585,33 @@ class Auttar {
         NSU: ${tefNsuCTF}`,
       };
 
-      _connect(this.__host, {
-        operacao,
-        valorTransacao: tefAmount,
-        dataTransacao: tefDataTransacao,
-        nsuCTF: tefNsuCTF,
-      })
-        .then((response) => {
-          if (response.retorno > 0) {
-            const errorMsg = privateVariables.errorCodes[response.codigoErro] || response.display[0].mensagem;
+      const response = await _send(
+        {
+          operacao,
+          valorTransacao: tefAmount,
+          dataTransacao: tefDataTransacao,
+          nsuCTF: tefNsuCTF,
+        }
+      );
 
-            const error = this.classError(`Transação não concluída ${response.codigoErro}: ${errorMsg}`);
+      if (response.retorno > 0) {
+        const errorMsg = privateVariables.errorCodes[response.codigoErro] || response.display[0].mensagem;
 
-            reject(error);
-          }
+        return Promise.reject(this.classError(`Transação não concluída ${response.codigoErro}: ${errorMsg}`));
+      }
 
-          this.debugMessage = {
-            message: `Resposta do servidor -> ${JSON.stringify(response)}`,
-            logLevel: 'log',
-          };
+      this.debugMessage = {
+        message: `Resposta do servidor -> ${JSON.stringify(response)}`,
+        logLevel: 'log',
+      };
 
-          this.debugMessage = {
-            message: response,
-            logLevel: 'json',
-          };
-
-          resolve(response);
-        })
-        .catch((e) => this.classError(e));
-    });
+      this.debugMessage = {
+        message: response,
+        logLevel: 'json',
+      };
+    } catch (error) {
+      return Promise.reject(error);
+    }
   }
 }
 
