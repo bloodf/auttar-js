@@ -133,34 +133,6 @@ function _webSocket(host, payload) {
     }
 
     if (privateVariables.ws) {
-      _timeout(20000);
-
-      privateVariables.ws.onopen = () => {
-        if (privateVariables.debug) {
-          logInfo('Setting the WebSocket opening message');
-        }
-
-        if (payload) {
-          if (privateVariables.debug) {
-            logInfo(JSON.stringify(payload));
-          }
-
-          privateVariables.ws.send(JSON.stringify(payload));
-        }
-
-        _clearTimeout();
-      };
-
-      privateVariables.ws.onmessage = (evtMsg) => {
-        if (privateVariables.debug) {
-          logInfo('Receiving a message from the WebSocket.');
-          logInfo(evtMsg);
-        }
-
-        _clearTimeout();
-        resolve(JSON.parse(evtMsg.data));
-      };
-
       privateVariables.ws.onerror = (evtError) => {
         if (privateVariables.debug) {
           logWarn('WebSocket has returned an error.');
@@ -188,6 +160,16 @@ function _send(payload) {
         }
 
         privateVariables.ws.send(JSON.stringify(payload));
+
+        privateVariables.ws.onmessage = (evtMsg) => {
+          if (privateVariables.debug) {
+            logInfo('Receiving a message from the WebSocket.');
+            logInfo(JSON.stringify(evtMsg));
+          }
+
+          _clearTimeout();
+          resolve(JSON.parse(evtMsg.data));
+        };
 
       } else {
         setTimeout(() => _send(payload), 5000);
@@ -394,16 +376,6 @@ class Auttar {
         dataTransacao: this.__transactionDate,
       };
 
-      this.debugMessage = {
-        message: `Resposta do servidor -> ${JSON.stringify(response)}`,
-        logLevel: 'log',
-      };
-
-      this.debugMessage = {
-        message: this.ctfTransaction,
-        logLevel: 'json',
-      };
-
       return Promise.resolve(response);
     } catch (error) {
       return Promise.reject(error);
@@ -449,16 +421,6 @@ class Auttar {
         dataTransacao: this.__transactionDate,
       };
 
-      this.debugMessage = {
-        message: `Resposta do servidor -> ${JSON.stringify(response)}`,
-        logLevel: 'log',
-      };
-
-      this.debugMessage = {
-        message: this.ctfTransaction,
-        logLevel: 'json',
-      };
-
       return Promise.resolve(response);
     } catch (error) {
       return Promise.reject(error);
@@ -495,16 +457,6 @@ class Auttar {
 
       this.ctfTransaction = Object.assign(this.ctfTransaction, response);
 
-      this.debugMessage = {
-        message: `Resposta do servidor -> ${JSON.stringify(response)}`,
-        logLevel: 'log',
-      };
-
-      this.debugMessage = {
-        message: response,
-        logLevel: 'json',
-      };
-
       return Promise.resolve(response);
     } catch (error) {
       return Promise.reject(error);
@@ -535,16 +487,6 @@ class Auttar {
 
         return Promise.reject(this.classError(`Transação não concluída ${response.codigoErro}: ${errorMsg}`));
       }
-
-      this.debugMessage = {
-        message: `Resposta do servidor -> ${JSON.stringify(response)}`,
-        logLevel: 'log',
-      };
-
-      this.debugMessage = {
-        message: responsea,
-        logLevel: 'json',
-      };
 
       return Promise.resolve(response);
     } catch (error) {
@@ -591,15 +533,6 @@ class Auttar {
         return Promise.reject(this.classError(`Transação não concluída ${response.codigoErro}: ${errorMsg}`));
       }
 
-      this.debugMessage = {
-        message: `Resposta do servidor -> ${JSON.stringify(response)}`,
-        logLevel: 'log',
-      };
-
-      this.debugMessage = {
-        message: response,
-        logLevel: 'json',
-      };
     } catch (error) {
       return Promise.reject(error);
     }
