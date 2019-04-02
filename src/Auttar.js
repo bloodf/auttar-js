@@ -142,7 +142,7 @@ function _webSocket(host, payload) {
 
         if (payload) {
           if (privateVariables.debug) {
-            logInfo(payload);
+            logInfo(JSON.stringify(payload));
           }
 
           privateVariables.ws.send(JSON.stringify(payload));
@@ -179,14 +179,12 @@ function _send(payload) {
     logMethod('_send', 'payload', payload);
   }
 
-  _timeout(20000);
-
   return new Promise((resolve, reject) => {
     try {
       if (privateVariables.ws && privateVariables.ws.readyState === 1) {
         if (privateVariables.debug) {
           logInfo('Sending a message to the WebSocket.');
-          logInfo(payload);
+          logInfo(JSON.stringify(payload));
         }
 
         privateVariables.ws.send(JSON.stringify(payload));
@@ -194,18 +192,12 @@ function _send(payload) {
           if (privateVariables.debug) {
             logInfo('Received an message from the WebSocket.');
           }
-
-          _clearTimeout();
           resolve(JSON.parse(evtMsg.data));
         };
       } else {
-        _clearTimeout();
-
         setTimeout(() => _send(payload), 5000);
       }
     } catch (error) {
-
-      _clearTimeout();
       reject(error);
     }
   });
