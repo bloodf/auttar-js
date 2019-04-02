@@ -188,12 +188,7 @@ function _send(payload) {
         }
 
         privateVariables.ws.send(JSON.stringify(payload));
-        privateVariables.ws.onmessage = (evtMsg) => {
-          if (privateVariables.debug) {
-            logInfo('Received an message from the WebSocket.');
-          }
-          resolve(JSON.parse(evtMsg.data));
-        };
+
       } else {
         setTimeout(() => _send(payload), 5000);
       }
