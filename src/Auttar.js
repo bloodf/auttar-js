@@ -101,6 +101,11 @@ function _webSocket(host) {
     }
 
     if (privateVariables.ws) {
+      privateVariables.ws.onopen = () => {
+        logInfo('WebSocket Connected.');
+        resolve();
+      };
+
       privateVariables.ws.onerror = (evtError) => {
         if (privateVariables.debug) {
           logWarn('WebSocket has returned an error.');
@@ -209,6 +214,8 @@ class Auttar {
       .replace(/\//g, '');
     this.ctfTransaction = {};
     this.__debugMessage = [];
+
+    _webSocket(this.__host);
   }
 
   debugLog(message) {
@@ -285,17 +292,6 @@ class Auttar {
       throw new Error('Não é possível definir um valor menor ou igual a zero.');
     } else {
       this.__amount = parseFloat(value) * 100;
-    }
-  }
-
-  async init() {
-    this.debugLogMethod('init');
-    try {
-      await _webSocket(this.__host);
-
-      return Promise.resolve(this);
-    } catch (error) {
-      return Promise.reject(error);
     }
   }
 
