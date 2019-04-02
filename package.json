@@ -1,6 +1,6 @@
 {
   "name": "auttarjs",
-  "version": "0.2.7",
+  "version": "0.2.8",
   "description": "Auttar WebSocket JS Class. An easy implementation of Auttar WebSocket Service.",
   "private": false,
   "repository": {

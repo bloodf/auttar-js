@@ -70,9 +70,9 @@ function _disconnect() {
   }
 }
 
-function _webSocket(host, payload) {
+function _webSocket(host) {
   if (privateVariables.debug) {
-    logMethod('_webSocket', 'host, payload', host, payload);
+    logMethod('_webSocket', 'host', host);
   }
 
   return new Promise((resolve, reject) => {
@@ -131,7 +131,7 @@ function _send(payload) {
         privateVariables.ws.onmessage = (evtMsg) => {
           if (privateVariables.debug) {
             logInfo('Receiving a message from the WebSocket.');
-            logInfo(JSON.stringify(evtMsg));
+            logInfo(JSON.stringify(evtMsg.data));
           }
 
           resolve(JSON.parse(evtMsg.data));
