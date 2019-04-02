@@ -265,8 +265,6 @@ class Auttar {
       .replace(/\//g, '');
     this.ctfTransaction = {};
     this.__debugMessage = [];
-
-    return this.init();
   }
 
   debugLog(message) {
