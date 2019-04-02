@@ -167,7 +167,6 @@ function _send(payload) {
             logInfo(JSON.stringify(evtMsg));
           }
 
-          _clearTimeout();
           resolve(JSON.parse(evtMsg.data));
         };
 
