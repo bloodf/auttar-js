@@ -54,7 +54,7 @@ const privateVariables = {
   timeout: null,
   close: true,
   timeoutConn: null,
-  firstCall: true,
+  host: '',
   debug: false,
 };
 
@@ -68,39 +68,6 @@ function _disconnect() {
   if (privateVariables.debug) {
     logInfo('WebSocket Disconnected');
   }
-}
-
-function _clearTimeout() {
-  if (privateVariables.debug) {
-    logMethod('_clearTimeout');
-  }
-
-  privateVariables.close = false;
-  clearTimeout(privateVariables.timeoutConn);
-
-  if (privateVariables.debug) {
-    logInfo('WebSotcket Timeout cleared.');
-  }
-}
-
-function _timeout(time = 10000) {
-  if (privateVariables.debug) {
-    logMethod('_timeout', 'time', time);
-  }
-
-  privateVariables.close = true;
-
-  if (privateVariables.debug) {
-    logInfo('Starting WebSocket Timeout');
-  }
-
-  privateVariables.timeoutConn = setTimeout(() => {
-    if (privateVariables.close) {
-      _disconnect();
-    } else {
-      _clearTimeout();
-    }
-  }, time);
 }
 
 function _webSocket(host, payload) {
@@ -119,6 +86,7 @@ function _webSocket(host, payload) {
           logInfo('WebSocket not active, creating a new connection.');
         }
 
+        privateVariables.host = host;
         privateVariables.ws = new WebSocket(host);
       } else if (privateVariables.ws.readyState === 2 || privateVariables.ws.readyState === 3) {
         if (privateVariables.debug) {
@@ -139,7 +107,6 @@ function _webSocket(host, payload) {
           logError(evtError);
         }
 
-        _clearTimeout();
         reject(evtError);
       };
     }
@@ -171,7 +138,10 @@ function _send(payload) {
         };
 
       } else {
-        setTimeout(() => _send(payload), 5000);
+        setTimeout(() => {
+          _disconnect();
+          _webSocket(privateVariables.host, payload);
+        }, 5000);
       }
     } catch (error) {
       reject(error);
