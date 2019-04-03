@@ -1,5 +1,5 @@
 /*!
- * auttarjs v0.3.3
+ * auttarjs v0.3.4
  * (c) Heitor Ramon Ribeiro <heitor.ramon@gmail.com>
  * Released under the MIT License.
  */
