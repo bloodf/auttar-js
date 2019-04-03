@@ -1,5 +1,7 @@
-/* eslint-disable */
-import { logInfo, logError, logMethod, logWarn } from './Helpers';
+/* eslint-disable no-underscore-dangle */
+import {
+  logInfo, logError, logMethod, logWarn,
+} from './Helpers';
 
 const privateVariables = {
   transactions: {
@@ -54,7 +56,6 @@ const privateVariables = {
   timeout: null,
   close: true,
   timeoutConn: null,
-  host: '',
   debug: false,
 };
 
@@ -64,34 +65,60 @@ function _disconnect() {
   }
 
   privateVariables.ws.close();
-
-  if (privateVariables.debug) {
-    logInfo('WebSocket Disconnected');
-  }
 }
 
-function _webSocket(host, payload) {
+function _clearTimeout() {
   if (privateVariables.debug) {
-    logMethod('_webSocket', 'host', host);
+    logMethod('_clearTimeout');
+    logInfo('Clearing WebSocket timeout.');
   }
 
-  if (privateVariables.ws === null) {
-    if (privateVariables.debug) {
-      logInfo('Starting WebSocket Connection.');
-    }
+  privateVariables.close = false;
+  clearTimeout(privateVariables.timeoutConn);
+}
 
-    privateVariables.ws = new WebSocket(host);
-  } else if (privateVariables.ws.readyState === 2 || privateVariables.ws.readyState === 3) {
-    if (privateVariables.debug) {
-      logWarn('WebSocket is connected but not available. Closing connection to start a new one.');
-    }
+function _timeout(time = 10000) {
+  if (privateVariables.debug) {
+    logMethod('_timeout', 'time', time);
+    logInfo('Starting WebSocket timeout.');
+  }
 
-    _disconnect();
-    privateVariables.ws = new WebSocket(host);
+  privateVariables.close = true;
+  privateVariables.timeoutConn = setTimeout(() => {
+    if (privateVariables.close) {
+      privateVariables.ws.close();
+    } else {
+      _clearTimeout();
+    }
+  }, time);
+}
+
+function _connect(host, payload) {
+  if (privateVariables.debug) {
+    logMethod('_connect', 'host', host);
   }
 
   return new Promise((resolve, reject) => {
     try {
+      if (privateVariables.ws === null) {
+        if (privateVariables.debug) {
+          logInfo('Starting WebSocket Connection.');
+        }
+
+        privateVariables.ws = new WebSocket(host);
+      } else if (privateVariables.ws.readyState === 2 || privateVariables.ws.readyState === 3) {
+        if (privateVariables.debug) {
+          logWarn('WebSocket is connected but not available. Closing connection to start a new one.');
+        }
+
+        _disconnect();
+        privateVariables.ws = new WebSocket(host);
+      }
+    } catch (e) {
+      reject(e);
+    }
+
+    if (privateVariables.ws) {
       _timeout();
 
       const sendRequest = () => {
@@ -105,7 +132,9 @@ function _webSocket(host, payload) {
         _timeout(60000);
       };
 
-      if (privateVariables.ws.readyState === 0) {
+      if (privateVariables.ws.readyState === 1) {
+        sendRequest();
+      } else {
         privateVariables.ws.onopen = () => {
           if (privateVariables.debug) {
             logInfo('WebSocket Connected.');
@@ -113,12 +142,14 @@ function _webSocket(host, payload) {
 
           sendRequest();
         };
-      } else if (privateVariables.ws.readyState === 1) {
-        sendRequest();
       }
 
       privateVariables.ws.onmessage = (evtMsg) => {
-        logInfo('Received a message from the WebSocket.');
+        if (privateVariables.debug) {
+          logInfo('Received a message from the WebSocket.');
+          logInfo(JSON.stringify(evtMsg.data));
+        }
+
         _clearTimeout();
         resolve(JSON.parse(evtMsg.data));
       };
@@ -126,37 +157,14 @@ function _webSocket(host, payload) {
       privateVariables.ws.onerror = (evtError) => {
         if (privateVariables.debug) {
           logWarn('WebSocket has returned an error.');
-          logError(evtError);
+          logError(JSON.stringify(evtError));
         }
 
         _clearTimeout();
-        if (evtError) reject(evtError);
+        reject(evtError);
       };
-    } catch (e) {
-      if (privateVariables.debug) {
-        logWarn('WebSocket has returned an error.');
-        logError(e);
-      }
-
-      reject(e);
     }
   });
-}
-
-function _clearTimeout() {
-  privateVariables.close = false;
-  clearTimeout(privateVariables.timeoutConn);
-}
-
-function _timeout(time = 10000) {
-  privateVariables.close = true;
-  privateVariables.timeoutConn = setTimeout(() => {
-    if (privateVariables.close) {
-      privateVariables.ws.close();
-    } else {
-      _clearTimeout();
-    }
-  }, time);
 }
 
 /**
@@ -215,17 +223,16 @@ class Auttar {
           month: '2-digit',
           day: '2-digit',
           timeZone: 'America/Sao_Paulo',
-        })
+        },
+      )
       .replace(/\//g, '');
     this.ctfTransaction = {};
     this.__debugMessage = [];
-
-    _webSocket(this.__host);
   }
 
   debugLog(message) {
     if (this.debug) {
-      logInfo(message);
+      logInfo(JSON.stringify(message));
     }
   }
 
@@ -264,23 +271,19 @@ class Auttar {
         logLevel: 'info',
         message: '',
         ...value,
-        date: new Date().toISOString(),
       };
 
       if (debugLog.logLevel === 'log' && debugLog.message) {
         return this.debugLog(debugLog.message);
       }
 
-      this.__debugMessage.push(
-        {
-          ...debugLog,
-          date: new Date().toISOString(),
-        }
-      );
+      this.__debugMessage
+          .push({
+                  ...debugLog,
+                  date: new Date().toISOString(),
+                });
 
-      if (debugLog.logLevel === 'info' && debugLog.message) {
-        this.debugLog(debugLog.message);
-      }
+      return this.debugLog(debugLog.message);
     }
   }
 
@@ -307,9 +310,9 @@ class Auttar {
    * @param {boolean} withInterest - juros pela administradora
    * @returns {Promise<AuttarSuccessResponse>}
    */
-  async credit(installments = 1, withInterest = false) {
-    this.debugLogMethod('credi', 'installments, withInterest', installments, withInterest);
-    try {
+  credit(installments = 1, withInterest = false) {
+    return new Promise((resolve, reject) => {
+      this.debugLogMethod('credi', 'installments, withInterest', installments, withInterest);
       const requisition = {
         valorTransacao: this.amount,
         documento: this.orderId,
@@ -330,26 +333,31 @@ class Auttar {
         message: `Pagamento com cartão de crédito. Operação: ${requisition.operacao}. Valor ${this.amount} centavos`,
       };
 
-      const response = await _webSocket(this.__host, requisition);
+      _connect(this.__host, requisition)
+        .then((response) => {
+          if (response.retorno > 0) {
+            const errorMsg = privateVariables.errorCodes[response.codigoErro]
+                             || response.display.length
+                             ? response.display.map(m => m.mensagem)
+                                       .join(' ')
+                             : ' ';
 
-      if (response.retorno > 0) {
-        const errorMsg = privateVariables.errorCodes[response.codigoErro]
-                         || response.display.length
-                         ? response.display.map(m => m.mensagem)
-                                   .join(' ')
-                         : ' ';
-        return Promise.reject(this.classError(`Transação não concluída ${response.codigoErro}: ${errorMsg}`));
-      }
+            reject(this.classError(`Transação não concluída ${response.codigoErro}: ${errorMsg}`));
+          }
 
-      this.ctfTransaction = {
-        ...response,
-        dataTransacao: this.__transactionDate,
-      };
+          this.ctfTransaction = {
+            ...response,
+            dataTransacao: this.__transactionDate,
+          };
 
-      return Promise.resolve(response);
-    } catch (error) {
-      return Promise.reject(error);
-    }
+          this.debugMessage = {
+            message: this.ctfTransaction,
+          };
+
+          resolve(response);
+        })
+        .catch(e => this.classError(e));
+    });
   }
 
   /**
@@ -358,110 +366,125 @@ class Auttar {
    * @param {boolean} isVoucher
    * @returns {Promise<AuttarSuccessResponse>}
    */
-  async debit(isVoucher = false) {
-    try {
+  debit(isVoucher = false) {
+    return new Promise((resolve, reject) => {
       this.debugLogMethod('debit', 'isVoucher', isVoucher);
+      const operacao = isVoucher
+                       ? privateVariables.transactions.debit.voucher
+                       : privateVariables.transactions.debit.base;
 
       this.debugMessage = {
         message: `Pagamento com cartão de débito. Operação: ${operacao}. Valor ${this.amount} centavos`,
       };
 
-      const requisition = {
+      _connect(this.__host, {
         valorTransacao: this.amount,
         documento: this.orderId,
         dataTransacao: this.__transactionDate,
-        operacao: isVoucher
-                  ? privateVariables.transactions.debit.voucher
-                  : privateVariables.transactions.debit.base,
-      };
+        operacao,
+      })
+        .then((response) => {
+          if (response.retorno > 0) {
+            const errorMsg = privateVariables.errorCodes[response.codigoErro]
+                             || response.display.length
+                             ? response.display.map(m => m.mensagem)
+                                       .join(' ')
+                             : ' ';
 
-      const response = await _webSocket(this.__host, requisition);
+            reject(this.classError(`Transação não concluída ${response.codigoErro}: ${errorMsg}`));
+          }
 
-      if (response.retorno > 0) {
-        const errorMsg = privateVariables.errorCodes[response.codigoErro]
-                         || response.display.length
-                         ? response.display.map(m => m.mensagem)
-                                   .join(' ')
-                         : ' ';
-        return Promise.reject(this.classError(`Transação não concluída ${response.codigoErro}: ${errorMsg}`));
-      }
+          this.ctfTransaction = {
+            ...response,
+            dataTransacao: this.__transactionDate,
+          };
 
-      this.ctfTransaction = {
-        ...response,
-        dataTransacao: this.__transactionDate,
-      };
+          this.debugMessage = {
+            message: this.ctfTransaction,
+          };
 
-      return Promise.resolve(response);
-    } catch (error) {
-      return Promise.reject(error);
-    }
+          resolve(response);
+        })
+        .catch(e => this.classError(e));
+    });
   }
 
   /**
    * Confirma a operação com o CTF
    * @returns {Promise<void>}
    */
-  async confirm() {
-    try {
+  confirm() {
+    return new Promise((resolve, reject) => {
       this.debugLogMethod('confirm');
-      const response = await _webSocket(this.__host, { operacao: privateVariables.transactions.confirm });
+      const operacao = privateVariables.transactions.confirm;
 
-      this.debugMessage = {
-        message: `Confirmação de pagamento da operação realizada.
+      _connect(this.__host, { operacao })
+        .then((response) => {
+          this.debugMessage = {
+            message: `Confirmação de pagamento da operação realizada.
       Operação: ${this.ctfTransaction.operacao}
       Data: ${this.ctfTransaction.dataTransacao}
       Valor: ${this.amount}
       Bandeira: ${this.ctfTransaction.bandeira}
       Cartão: ${this.ctfTransaction.cartao}`,
-      };
+          };
+          if (response.retorno > 0) {
+            const errorMsg = privateVariables.errorCodes[response.codigoErro]
+                             || response.display.length
+                             ? response.display.map(m => m.mensagem)
+                                       .join(' ')
+                             : ' ';
 
-      if (response.retorno > 0) {
-        const errorMsg = privateVariables.errorCodes[response.codigoErro]
-                         || response.display.length
-                         ? response.display.map(m => m.mensagem)
-                                   .join(' ')
-                         : ' ';
+            reject(this.classError(`Transação não concluída ${response.codigoErro}: ${errorMsg}`));
+          }
 
-        return Promise.reject(this.classError(`Transação não concluída ${response.codigoErro}: ${errorMsg}`));
-      }
+          this.ctfTransaction = Object.assign(this.ctfTransaction, response);
+          this.debugMessage = {
+            message: this.ctfTransaction,
+          };
 
-      this.ctfTransaction = Object.assign(this.ctfTransaction, response);
-
-      return Promise.resolve(response);
-    } catch (error) {
-      return Promise.reject(error);
-    }
+          resolve(response);
+        })
+        .catch(e => this.classError(e));
+    });
   }
 
   /**
    * Inicia o processo de cancelamento de compra.
    * @returns {Promise<void>}
    */
-  async requestCancellation() {
-    try {
+  requestCancellation() {
+    return new Promise((resolve, reject) => {
       this.debugLogMethod('requestCancellation');
-      this.debugMessage = {
-        message: `Requisição de cancelamento de compra.
+      const operacao = privateVariables.transactions.requestCancel;
+
+      _connect(this.__host, { operacao })
+        .then((response) => {
+          this.debugMessage = {
+            message: `Requisição de cancelamento de compra.
       Operação: ${this.ctfTransaction.operacao}
       Data: ${this.ctfTransaction.dataTransacao}
       Valor: ${this.amount}
       NSU: ${this.ctfTransaction.nsuCTF}`,
-      };
-      const response = await _webSocket(this.__host, { operacao: privateVariables.transactions.requestCancel });
-      if (response.retorno > 0) {
-        const errorMsg = privateVariables.errorCodes[response.codigoErro]
-                         || response.display.length
-                         ? response.display.map(m => m.mensagem)
-                                   .join(' ')
-                         : ' ';
+          };
+          if (response.retorno > 0) {
+            const errorMsg = privateVariables.errorCodes[response.codigoErro]
+                             || response.display.length
+                             ? response.display.map(m => m.mensagem)
+                                       .join(' ')
+                             : ' ';
 
-        return Promise.reject(this.classError(`Transação não concluída ${response.codigoErro}: ${errorMsg}`));
-      }
+            reject(this.classError(`Transação não concluída ${response.codigoErro}: ${errorMsg}`));
+          }
 
-      return Promise.resolve(response);
-    } catch (error) {
-      return Promise.reject(error);
-    }
+          this.debugMessage = {
+            message: response,
+          };
+
+          resolve(response);
+        })
+        .catch(e => this.classError(e));
+    });
   }
 
   /**
@@ -469,44 +492,46 @@ class Auttar {
    * @param {string} prop.dataTransacao
    * @param {number} prop.amount
    * @param {string} prop.nsuCTF
+   * @param {string} prop.operacao
    * @returns {Promise<any>}
    */
-  async cancel(prop = {}) {
-    try {
+  cancel(prop = {}) {
+    return new Promise((resolve, reject) => {
       this.debugLogMethod('cancel', 'prop', prop);
-
       const operacao = privateVariables.transactions.cancel;
       const tefOperacao = prop.operacao || this.ctfTransaction.operacao;
       const tefDataTransacao = prop.dataTransacao || this.ctfTransaction.dataTransacao;
       const tefAmount = prop.amount ? parseFloat(prop.amount) * 100 : this.ctfTransaction.valorTransacao;
       const tefNsuCTF = prop.nsuCTF || this.ctfTransaction.nsuCTF;
-      this.debugMessage = {
-        message: `Cancelamento de compra.
+
+      _connect(this.__host, {
+        operacao,
+        valorTransacao: tefAmount,
+        dataTransacao: tefDataTransacao,
+        nsuCTF: tefNsuCTF,
+      })
+        .then((response) => {
+          this.debugMessage = {
+            message: `Cancelamento de compra.
         Operação: ${tefOperacao}
         Data: ${tefDataTransacao}
         Valor: ${tefAmount}
         NSU: ${tefNsuCTF}`,
-      };
+          };
+          if (response.retorno > 0) {
+            const errorMsg = privateVariables.errorCodes[response.codigoErro] || response.display[0].mensagem;
 
-      const response = await _webSocket(
-        this.__host,
-        {
-          operacao,
-          valorTransacao: tefAmount,
-          dataTransacao: tefDataTransacao,
-          nsuCTF: tefNsuCTF,
-        }
-      );
+            reject(this.classError(`Transação não concluída ${response.codigoErro}: ${errorMsg}`));
+          }
 
-      if (response.retorno > 0) {
-        const errorMsg = privateVariables.errorCodes[response.codigoErro] || response.display[0].mensagem;
+          this.debugMessage = {
+            message: response,
+          };
 
-        return Promise.reject(this.classError(`Transação não concluída ${response.codigoErro}: ${errorMsg}`));
-      }
-
-    } catch (error) {
-      return Promise.reject(error);
-    }
+          resolve(response);
+        })
+        .catch(e => this.classError(e));
+    });
   }
 }
 
