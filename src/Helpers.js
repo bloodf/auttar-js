@@ -64,6 +64,10 @@ export function addSpaces(text, maxChar) {
     .join('');
 }
 
+export function sleep(ms) {
+  return new Promise((res) => setTimeout(res, ms));
+}
+
 export default {
   required,
   logInfo,
@@ -71,4 +75,5 @@ export default {
   logWarn,
   logMethod,
   addSpaces,
+  sleep,
 };

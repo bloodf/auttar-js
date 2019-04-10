@@ -47,17 +47,24 @@ const  Auttar  =  new  AuttarClass({});
 | debug | boolean | false
 | orderId | string | ''
 | amount | float | 0
+| webSocketTimeout | number | 60000
 
-### credit
+### credit - Venda no crédito
 ```JS
 Auttar.credit(installments =  1, withInterest = false)
 ```
 
-### debit
+### debit - Vennda no Debito
 ```JS
 Auttar.debit(isVoucher = false)
 ```
-### cancel
+
+### requestCancellation - Desfazimento da venda ativa
+```JS
+Auttar.requestCancellation()
+```
+
+### cancel - Extorno de venda
 ```JS
 Auttar.cancel(prop = {})
 ```
@@ -94,7 +101,7 @@ Auttar.debit();
 //Realizando desfazimento total de operação
 Auttar.requestCancellation();
 
-//Realizando cancelamento da última compra
+//Realizando extorno da última compra
 Auttar.cancel();
 
 //Realizando confirmação da operação

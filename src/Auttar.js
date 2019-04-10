@@ -1,6 +1,6 @@
 /* eslint-disable no-underscore-dangle */
 import {
-  logInfo, logError, logMethod, logWarn,
+  logInfo, logError, logMethod, logWarn, sleep,
 } from './Helpers';
 
 const privateVariables = {
@@ -56,6 +56,7 @@ const privateVariables = {
   timeout: null,
   close: true,
   timeoutConn: null,
+  timeoutMs: 60000,
   debug: false,
 };
 
@@ -75,22 +76,26 @@ function _clearTimeout() {
 
   privateVariables.close = false;
   clearTimeout(privateVariables.timeoutConn);
+  privateVariables.close = true;
 }
 
 function _timeout(time = 10000) {
-  if (privateVariables.debug) {
-    logMethod('_timeout', 'time', time);
-    logInfo('Starting WebSocket timeout.');
-  }
-
-  privateVariables.close = true;
-  privateVariables.timeoutConn = setTimeout(() => {
-    if (privateVariables.close) {
-      privateVariables.ws.close();
-    } else {
-      _clearTimeout();
+  return new Promise((resolve, reject) => {
+    if (privateVariables.debug) {
+      logMethod('_timeout', 'time', time);
+      logInfo('Starting WebSocket timeout.');
     }
-  }, time);
+
+    privateVariables.timeoutConn = setTimeout(() => {
+      if (!privateVariables.close) {
+        _clearTimeout();
+        resolve(true);
+      } else {
+        privateVariables.ws.close();
+        reject(new Error('Connection Timeout.'));
+      }
+    }, time);
+  });
 }
 
 function _connect(host, payload) {
@@ -129,7 +134,8 @@ function _connect(host, payload) {
 
         _clearTimeout();
         privateVariables.ws.send(JSON.stringify(payload));
-        _timeout(60000);
+        _timeout(privateVariables.timeoutMs)
+          .catch(e => reject(e));
       };
 
       if (privateVariables.ws.readyState === 1) {
@@ -200,6 +206,7 @@ function _connect(host, payload) {
  * @property {boolean} debug - Método debug da classe
  * @property {string} orderId - Número de identificação da venda
  * @property {float} amount - Valor da venda
+ * @property {number} webSocketTimeout - SocketTimeout
  * @property {AuttarSuccessResponse} ctfTrasaction - Objecto de resposta do websocket
  */
 
@@ -212,6 +219,7 @@ class Auttar {
     this.__host = props.host || 'ws://localhost:2500';
     this.debug = props.debug || false;
     privateVariables.debug = props.debug || false;
+    privateVariables.timeoutMs = props.webSocketTimeout || 60000;
     this.orderId = props.orderId || '';
     this.__amount = 0;
     if (props.amount) this.amount = props.amount;
@@ -332,31 +340,33 @@ class Auttar {
       this.debugMessage = {
         message: `Pagamento com cartão de crédito. Operação: ${requisition.operacao}. Valor ${this.amount} centavos`,
       };
+      sleep(2000)
+        .then(() => {
+          _connect(this.__host, requisition)
+            .then((response) => {
+              if (response.retorno > 0) {
+                const errorMsg = privateVariables.errorCodes[response.codigoErro]
+                                 || response.display.length
+                                 ? response.display.map(m => m.mensagem)
+                                           .join(' ')
+                                 : ' ';
 
-      _connect(this.__host, requisition)
-        .then((response) => {
-          if (response.retorno > 0) {
-            const errorMsg = privateVariables.errorCodes[response.codigoErro]
-                             || response.display.length
-                             ? response.display.map(m => m.mensagem)
-                                       .join(' ')
-                             : ' ';
+                reject(this.classError(`Transação não concluída ${response.codigoErro}: ${errorMsg}`));
+              }
 
-            reject(this.classError(`Transação não concluída ${response.codigoErro}: ${errorMsg}`));
-          }
+              this.ctfTransaction = {
+                ...response,
+                dataTransacao: this.__transactionDate,
+              };
 
-          this.ctfTransaction = {
-            ...response,
-            dataTransacao: this.__transactionDate,
-          };
+              this.debugMessage = {
+                message: this.ctfTransaction,
+              };
 
-          this.debugMessage = {
-            message: this.ctfTransaction,
-          };
-
-          resolve(response);
-        })
-        .catch(e => this.classError(e));
+              resolve(response);
+            })
+            .catch(e => this.classError(e));
+        });
     });
   }
 
@@ -376,36 +386,38 @@ class Auttar {
       this.debugMessage = {
         message: `Pagamento com cartão de débito. Operação: ${operacao}. Valor ${this.amount} centavos`,
       };
-
-      _connect(this.__host, {
-        valorTransacao: this.amount,
-        documento: this.orderId,
-        dataTransacao: this.__transactionDate,
-        operacao,
-      })
-        .then((response) => {
-          if (response.retorno > 0) {
-            const errorMsg = privateVariables.errorCodes[response.codigoErro]
-                             || response.display.length
-                             ? response.display.map(m => m.mensagem)
-                                       .join(' ')
-                             : ' ';
-
-            reject(this.classError(`Transação não concluída ${response.codigoErro}: ${errorMsg}`));
-          }
-
-          this.ctfTransaction = {
-            ...response,
+      sleep(2000)
+        .then(() => {
+          _connect(this.__host, {
+            valorTransacao: this.amount,
+            documento: this.orderId,
             dataTransacao: this.__transactionDate,
-          };
+            operacao,
+          })
+            .then((response) => {
+              if (response.retorno > 0) {
+                const errorMsg = privateVariables.errorCodes[response.codigoErro]
+                                 || response.display.length
+                                 ? response.display.map(m => m.mensagem)
+                                           .join(' ')
+                                 : ' ';
 
-          this.debugMessage = {
-            message: this.ctfTransaction,
-          };
+                reject(this.classError(`Transação não concluída ${response.codigoErro}: ${errorMsg}`));
+              }
 
-          resolve(response);
-        })
-        .catch(e => this.classError(e));
+              this.ctfTransaction = {
+                ...response,
+                dataTransacao: this.__transactionDate,
+              };
+
+              this.debugMessage = {
+                message: this.ctfTransaction,
+              };
+
+              resolve(response);
+            })
+            .catch(e => this.classError(e));
+        });
     });
   }
 
@@ -417,35 +429,37 @@ class Auttar {
     return new Promise((resolve, reject) => {
       this.debugLogMethod('confirm');
       const operacao = privateVariables.transactions.confirm;
-
-      _connect(this.__host, { operacao })
-        .then((response) => {
-          this.debugMessage = {
-            message: `Confirmação de pagamento da operação realizada.
+      sleep(5000)
+        .then(() => {
+          _connect(this.__host, { operacao })
+            .then((response) => {
+              this.debugMessage = {
+                message: `Confirmação de pagamento da operação realizada.
       Operação: ${this.ctfTransaction.operacao}
       Data: ${this.ctfTransaction.dataTransacao}
       Valor: ${this.amount}
       Bandeira: ${this.ctfTransaction.bandeira}
       Cartão: ${this.ctfTransaction.cartao}`,
-          };
-          if (response.retorno > 0) {
-            const errorMsg = privateVariables.errorCodes[response.codigoErro]
-                             || response.display.length
-                             ? response.display.map(m => m.mensagem)
-                                       .join(' ')
-                             : ' ';
+              };
+              if (response.retorno > 0) {
+                const errorMsg = privateVariables.errorCodes[response.codigoErro]
+                                 || response.display.length
+                                 ? response.display.map(m => m.mensagem)
+                                           .join(' ')
+                                 : ' ';
 
-            reject(this.classError(`Transação não concluída ${response.codigoErro}: ${errorMsg}`));
-          }
+                reject(this.classError(`Transação não concluída ${response.codigoErro}: ${errorMsg}`));
+              }
 
-          this.ctfTransaction = Object.assign(this.ctfTransaction, response);
-          this.debugMessage = {
-            message: this.ctfTransaction,
-          };
+              this.ctfTransaction = Object.assign(this.ctfTransaction, response);
+              this.debugMessage = {
+                message: this.ctfTransaction,
+              };
 
-          resolve(response);
-        })
-        .catch(e => this.classError(e));
+              resolve(response);
+            })
+            .catch(e => this.classError(e));
+        });
     });
   }
 
@@ -457,33 +471,35 @@ class Auttar {
     return new Promise((resolve, reject) => {
       this.debugLogMethod('requestCancellation');
       const operacao = privateVariables.transactions.requestCancel;
-
-      _connect(this.__host, { operacao })
-        .then((response) => {
-          this.debugMessage = {
-            message: `Requisição de cancelamento de compra.
+      sleep(5000)
+        .then(() => {
+          _connect(this.__host, { operacao })
+            .then((response) => {
+              this.debugMessage = {
+                message: `Requisição de cancelamento de compra.
       Operação: ${this.ctfTransaction.operacao}
       Data: ${this.ctfTransaction.dataTransacao}
       Valor: ${this.amount}
       NSU: ${this.ctfTransaction.nsuCTF}`,
-          };
-          if (response.retorno > 0) {
-            const errorMsg = privateVariables.errorCodes[response.codigoErro]
-                             || response.display.length
-                             ? response.display.map(m => m.mensagem)
-                                       .join(' ')
-                             : ' ';
+              };
+              if (response.retorno > 0) {
+                const errorMsg = privateVariables.errorCodes[response.codigoErro]
+                                 || response.display.length
+                                 ? response.display.map(m => m.mensagem)
+                                           .join(' ')
+                                 : ' ';
 
-            reject(this.classError(`Transação não concluída ${response.codigoErro}: ${errorMsg}`));
-          }
+                reject(this.classError(`Transação não concluída ${response.codigoErro}: ${errorMsg}`));
+              }
 
-          this.debugMessage = {
-            message: response,
-          };
+              this.debugMessage = {
+                message: response,
+              };
 
-          resolve(response);
-        })
-        .catch(e => this.classError(e));
+              resolve(response);
+            })
+            .catch(e => this.classError(e));
+        });
     });
   }
 
@@ -503,34 +519,36 @@ class Auttar {
       const tefDataTransacao = prop.dataTransacao || this.ctfTransaction.dataTransacao;
       const tefAmount = prop.amount ? parseFloat(prop.amount) * 100 : this.ctfTransaction.valorTransacao;
       const tefNsuCTF = prop.nsuCTF || this.ctfTransaction.nsuCTF;
-
-      _connect(this.__host, {
-        operacao,
-        valorTransacao: tefAmount,
-        dataTransacao: tefDataTransacao,
-        nsuCTF: tefNsuCTF,
-      })
-        .then((response) => {
-          this.debugMessage = {
-            message: `Cancelamento de compra.
+      sleep(5000)
+        .then(() => {
+          _connect(this.__host, {
+            operacao,
+            valorTransacao: tefAmount,
+            dataTransacao: tefDataTransacao,
+            nsuCTF: tefNsuCTF,
+          })
+            .then((response) => {
+              this.debugMessage = {
+                message: `Cancelamento de compra.
         Operação: ${tefOperacao}
         Data: ${tefDataTransacao}
         Valor: ${tefAmount}
         NSU: ${tefNsuCTF}`,
-          };
-          if (response.retorno > 0) {
-            const errorMsg = privateVariables.errorCodes[response.codigoErro] || response.display[0].mensagem;
+              };
+              if (response.retorno > 0) {
+                const errorMsg = privateVariables.errorCodes[response.codigoErro] || response.display[0].mensagem;
 
-            reject(this.classError(`Transação não concluída ${response.codigoErro}: ${errorMsg}`));
-          }
+                reject(this.classError(`Transação não concluída ${response.codigoErro}: ${errorMsg}`));
+              }
 
-          this.debugMessage = {
-            message: response,
-          };
+              this.debugMessage = {
+                message: response,
+              };
 
-          resolve(response);
-        })
-        .catch(e => this.classError(e));
+              resolve(response);
+            })
+            .catch(e => this.classError(e));
+        });
     });
   }
 }
