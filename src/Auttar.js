@@ -207,6 +207,7 @@ function _connect(host, payload) {
  * @property {string} orderId - Número de identificação da venda
  * @property {float} amount - Valor da venda
  * @property {number} webSocketTimeout - SocketTimeout
+ * @property {number} sleepTimeout - sleepTimeout
  * @property {AuttarSuccessResponse} ctfTrasaction - Objecto de resposta do websocket
  */
 
@@ -222,6 +223,7 @@ class Auttar {
     privateVariables.timeoutMs = props.webSocketTimeout || 60000;
     this.orderId = props.orderId || '';
     this.__amount = 0;
+    this.__sleepTimeout = props.sleepTimeout || 1000;
     if (props.amount) this.amount = props.amount;
     this.__transactionDate = new Date()
       .toLocaleDateString(
@@ -340,7 +342,7 @@ class Auttar {
       this.debugMessage = {
         message: `Pagamento com cartão de crédito. Operação: ${requisition.operacao}. Valor ${this.amount} centavos`,
       };
-      sleep(2000)
+      sleep(this.__sleepTimeout)
         .then(() => {
           _connect(this.__host, requisition)
             .then((response) => {
@@ -363,7 +365,11 @@ class Auttar {
                 message: this.ctfTransaction,
               };
 
-              resolve(response);
+              resolve({
+                        documento: this.orderId,
+                        dataTransacao: this.__transactionDate,
+                        ...response,
+                      });
             })
             .catch(e => this.classError(e));
         });
@@ -386,7 +392,7 @@ class Auttar {
       this.debugMessage = {
         message: `Pagamento com cartão de débito. Operação: ${operacao}. Valor ${this.amount} centavos`,
       };
-      sleep(2000)
+      sleep(this.__sleepTimeout)
         .then(() => {
           _connect(this.__host, {
             valorTransacao: this.amount,
@@ -414,7 +420,11 @@ class Auttar {
                 message: this.ctfTransaction,
               };
 
-              resolve(response);
+              resolve({
+                        documento: this.orderId,
+                        dataTransacao: this.__transactionDate,
+                        ...response,
+                      });
             })
             .catch(e => this.classError(e));
         });
@@ -429,7 +439,7 @@ class Auttar {
     return new Promise((resolve, reject) => {
       this.debugLogMethod('confirm');
       const operacao = privateVariables.transactions.confirm;
-      sleep(5000)
+      sleep(this.__sleepTimeout)
         .then(() => {
           _connect(this.__host, { operacao })
             .then((response) => {
@@ -456,7 +466,10 @@ class Auttar {
                 message: this.ctfTransaction,
               };
 
-              resolve(response);
+              resolve({
+                        ...this.ctfTransaction,
+                        ...response,
+                      });
             })
             .catch(e => this.classError(e));
         });
@@ -471,7 +484,7 @@ class Auttar {
     return new Promise((resolve, reject) => {
       this.debugLogMethod('requestCancellation');
       const operacao = privateVariables.transactions.requestCancel;
-      sleep(5000)
+      sleep(this.__sleepTimeout)
         .then(() => {
           _connect(this.__host, { operacao })
             .then((response) => {
@@ -496,7 +509,10 @@ class Auttar {
                 message: response,
               };
 
-              resolve(response);
+              resolve({
+                        ...this.ctfTransaction,
+                        ...response,
+                      });
             })
             .catch(e => this.classError(e));
         });
@@ -519,7 +535,7 @@ class Auttar {
       const tefDataTransacao = prop.dataTransacao || this.ctfTransaction.dataTransacao;
       const tefAmount = prop.amount ? parseFloat(prop.amount) * 100 : this.ctfTransaction.valorTransacao;
       const tefNsuCTF = prop.nsuCTF || this.ctfTransaction.nsuCTF;
-      sleep(5000)
+      sleep(this.__sleepTimeout)
         .then(() => {
           _connect(this.__host, {
             operacao,
@@ -545,7 +561,10 @@ class Auttar {
                 message: response,
               };
 
-              resolve(response);
+              resolve({
+                        ...this.ctfTransaction,
+                        ...response,
+                      });
             })
             .catch(e => this.classError(e));
         });
