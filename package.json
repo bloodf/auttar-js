@@ -47,7 +47,7 @@
     "@babel/preset-env": "^7.0.0",
     "@babel/register": "^7.0.0",
     "babel-eslint": "^10.0.1",
-    "bili": "^4.5.2",
+    "bili": "^5.0.4",
     "del": "^2.2.2",
     "eslint": "^5.9.0",
     "eslint-config-airbnb": "^17.1.0",
