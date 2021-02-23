@@ -50,7 +50,7 @@
     "bili": "^4.5.2",
     "del": "^2.2.2",
     "eslint": "^5.9.0",
-    "eslint-config-airbnb": "^17.1.0",
+    "eslint-config-airbnb": "^18.2.1",
     "eslint-config-airbnb-base": "^13.1.0",
     "eslint-plugin-import": "^2.2.0",
     "eslint-plugin-jsx-a11y": "^6.2.1",
